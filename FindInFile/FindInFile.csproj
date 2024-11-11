@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UseWPF>true</UseWPF>
+        <Company>AdiSoft</Company>
+        <ApplicationIcon>icons\main.ico</ApplicationIcon>
+        <AssemblyVersion>2024.11.11.4</AssemblyVersion>
+        <FileVersion>2024.11.11.4</FileVersion>
+        <StartupObject>FindInFile.App</StartupObject>
+        <Title>InFileSearcher</Title>
+        <PackageIcon>main128x128.png</PackageIcon>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <ShouldCreateLogs>True</ShouldCreateLogs>
+      <AdvancedSettingsExpanded>False</AdvancedSettingsExpanded>
+      <UpdateAssemblyVersion>True</UpdateAssemblyVersion>
+      <UpdateAssemblyFileVersion>True</UpdateAssemblyFileVersion>
+      <UpdateAssemblyInfoVersion>False</UpdateAssemblyInfoVersion>
+      <AssemblyVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyVersionSettings>
+      <UpdatePackageVersion>False</UpdatePackageVersion>
+      <AssemblyInfoVersionType>SettingsVersion</AssemblyInfoVersionType>
+      <InheritWinAppVersionFrom>None</InheritWinAppVersionFrom>
+      <AssemblyFileVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyFileVersionSettings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ICSharpCode.AvalonEdit\ICSharpCode.AvalonEdit.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="icons\settings.ico" />
+      <Resource Include="icons\settings.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="icons\main.png">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+      <None Update="icons\main128x128.png">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,220 @@
+﻿<Window x:Class="FindInFile.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:vm="clr-namespace:FindInFile.ViewModel"
+        mc:Ignorable="d"
+        Title="{Binding Title}" Height="450" Width="800" Closing="MainWindow_OnClosing">
+    
+    <Window.Resources>
+        <ContextMenu x:Key="RowMenu">
+            <MenuItem Header="Open File" Click="OpenFile_Click"/>
+            <MenuItem Header="Show in Explorer" Click="ShowInExplorer_Click"/>
+        </ContextMenu>
+
+        <Style TargetType="DataGridRow" x:Key="DataRowStyle">
+            <Setter Property="ContextMenu" Value="{StaticResource RowMenu}"/>
+        </Style>
+        <Style TargetType="Button" x:Key="ModernButton">
+            <Setter Property="Background" Value="LightGray"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="DarkGray"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="SlateGray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/> <!-- Main content area -->
+            <ColumnDefinition Width="4" x:Name="SplitterColumn"/> <!--Splitter -->
+            <ColumnDefinition Width="400" x:Name="PreviewColumn"/> <!-- Preview area, initially hidden -->
+        </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="35"></RowDefinition>
+                <RowDefinition Height="60" x:Name="TextSearchRow"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="150"></ColumnDefinition>
+                <ColumnDefinition Width="150"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <ComboBox 
+                Grid.Row="0"
+                Grid.ColumnSpan="2"
+                Grid.Column="0"
+                Name="cbSearchText"
+                Margin="5"
+                IsEditable="True"
+                SelectionChanged="CbSearchText_SelectionChanged"
+                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                ItemsSource="{Binding SearchTexts, UpdateSourceTrigger=PropertyChanged}"/>
+            
+            <ComboBox
+                Grid.Row="0"
+                Grid.Column="2"
+                Name="cbSearchExt"
+                Margin="5"
+                IsEditable="True"
+                SelectionChanged="CbSearchExt_SelectionChanged"
+                Text="{Binding Extension, UpdateSourceTrigger=PropertyChanged}"
+                ItemsSource="{Binding SearchExtensions, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <Grid Grid.Row="1" Grid.ColumnSpan="3" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="35"/>
+                    <RowDefinition Height="20" />
+                    <RowDefinition x:Name="OptionsRow" Height="0" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                    <ColumnDefinition Width="70"/>
+                </Grid.ColumnDefinitions>
+
+                <ComboBox
+                    Grid.Column="0"
+                    Name="cbSearchPath"
+                    Grid.Row="0"
+                    Margin="5"
+                    IsEditable="True"
+                    SelectionChanged="CbSearchPath_SelectionChanged"
+                    Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}"
+                    ItemsSource="{Binding SearchPaths, UpdateSourceTrigger=PropertyChanged}"/>
+                
+                <!-- Select Folder -->
+                <Button 
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Style="{StaticResource ModernButton}"
+                    Content="..."
+                    Width="25"
+                    Margin="5"
+                    Click="ButPath_Click" />
+                
+                <!-- Subdirecotries -->
+                <CheckBox 
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Content="Include Subdirectories"
+                    ToolTip="Search also in the subdirectories"
+                    HorizontalAlignment="Left"
+                    Width="110"
+                    Margin="5,0,5,0"
+                    Name="chbSubDirs"
+                    IsChecked="{Binding SubDirs}"/>
+                
+                <!-- Options -->
+                <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" FlowDirection="LeftToRight" Orientation="Horizontal">
+                    <!-- Clear History -->
+                    <Button 
+                        Style="{StaticResource ModernButton}"
+                        Content="Clear History"
+                        ToolTip="Clear History"
+                        Width="110"
+                        Margin="5,0,5,0" Click="ButDelHistory_Click" />
+                    
+                    <!-- set max preview size -->
+                    <TextBox 
+                        ToolTip="Set the max size to show a preview of a file (0 shows all files)"
+                        Width="30"
+                        Margin="5,0,5,0"
+                        Text="{Binding MaxPreviewSize, UpdateSourceTrigger=PropertyChanged}"/>
+                    
+                    <Label Content="MB" Margin="0" Padding="0"></Label>
+                </StackPanel>
+                
+                <!-- Search Button -->
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="2" 
+                    Style="{StaticResource ModernButton}"
+                    Name="butSearch"
+                    Click="ButSearch_Click"
+                    Width="60"
+                    Content="Search"
+                    Margin="5,5,5,5"/>
+                
+                <!-- Option Button -->
+                <Button 
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Style="{StaticResource ModernButton}"
+                    Width="25"
+                    ToolTip="Settings"
+                    Margin="5,0,5,0"
+                    Click="ButOptions_Click">
+                    <Image Source="icons/settings.ico"/>
+                </Button>
+                
+                <!-- Preview Open/Close -->
+                <Button 
+                    Grid.Row="1"
+                    Grid.Column="2"
+                    Style="{StaticResource ModernButton}"
+                    Name="butPreview"
+                    Click="ButPreview_Click"
+                    ToolTip="Open/Close the Preview for the current file"
+                    Content=">>>"
+                    Margin="5,0,5,0"/>
+            </Grid>
+
+            <!-- Row 2: DataGrid for Results -->
+            <DataGrid Grid.Row="2" 
+                      Grid.ColumnSpan="3"
+                      Grid.Column="0"
+                      Name="dgResult"
+                      AutoGenerateColumns="False"
+                      RowStyle="{StaticResource DataRowStyle}"
+                      SelectedCellsChanged="DataGridResults_OnSelectedCellsChanged">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" Width="*"/>
+                    <DataGridTextColumn Header="Line Number" Binding="{Binding LineNumber}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Background="Gray" DragCompleted="PreViewSplitter_OnDragCompleted"/>
+
+        <!-- Preview Area -->
+        <Grid Grid.Column="2">
+            
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+           
+            <Grid>
+                <avalonEdit:TextEditor
+                                       Name="tbPreview"
+                                       FontFamily="Consolas"
+                                       FontSize="10pt"
+                                       SyntaxHighlighting="C#">
+                </avalonEdit:TextEditor>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
