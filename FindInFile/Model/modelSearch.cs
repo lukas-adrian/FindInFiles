@@ -7,6 +7,8 @@ public class modelSearch
    public string SearchText { get; set; }
    public string Extension { get; set; }
    public string Path { get; set; }
+   public string HistoryFilePath { get; set; }
+
    public bool SubDirs { get; set; }
    public ObservableCollection<string> SearchPaths { get; set; }
    public ObservableCollection<string> SearchExtensions { get; set; }
