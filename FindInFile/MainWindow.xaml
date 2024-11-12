@@ -279,14 +279,16 @@
             <DataGrid Grid.Row="2" 
                       Grid.ColumnSpan="3"
                       Grid.Column="0"
+                      IsReadOnly="True"
                       Name="dgResult"
                       AutoGenerateColumns="False"
                       RowStyle="{StaticResource DataRowStyle}"
                       SelectedCellsChanged="DataGridResults_OnSelectedCellsChanged"
                       ItemsSource="{Binding SearchResultList}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" Width="*"/>
-                    <DataGridTextColumn Header="Line Number" Binding="{Binding LineNumber}" Width="*"/>
+                    <DataGridTextColumn Header="Path" Binding="{Binding FilePath}" Width="Auto"/>
+                    <DataGridTextColumn Header="Size (Kb)" Binding="{Binding FileSize}" Width="Auto"/>
+                    <DataGridTextColumn Header="Line Number" Binding="{Binding LineNumber}" Width="Auto"/>
                 </DataGrid.Columns>
             </DataGrid>
             

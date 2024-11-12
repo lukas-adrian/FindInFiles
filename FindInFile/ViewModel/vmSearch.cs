@@ -248,21 +248,20 @@ namespace FindInFile.ViewModel
          if (!string.IsNullOrEmpty(text))
          {
             SearchHistory.Text.Add(text);
-            SaveHistory();
             SearchTexts = new ObservableCollection<String>(SearchHistory.Text);
          }
          if (!string.IsNullOrEmpty(extension))
          {
             SearchHistory.Extension.Add(extension);
-            SaveHistory();
             SearchExtensions = new ObservableCollection<String>(SearchHistory.Extension);
          }
          if (!string.IsNullOrEmpty(path))
          {
             SearchHistory.Path.Add(path);
-            SaveHistory();
             SearchPaths = new ObservableCollection<String>(SearchHistory.Path);
          }
+         SaveHistory();
+
       }
       
       /// <summary>
@@ -384,8 +383,6 @@ namespace FindInFile.ViewModel
                   processedFiles++;
                   int percentage = (int)((processedFiles / (float)totalFiles) * 100);
                   progress?.Report(percentage);
-                  
-                  //worker?.ReportProgress((int)((processedFiles / (float)totalFiles) * 100));
                }
             }
          }
@@ -407,6 +404,8 @@ namespace FindInFile.ViewModel
       {
          try
          {
+            FileInfo fileInfo = new(filePath);
+            
             byte[] fileBytes = File.ReadAllBytes(filePath); // Read all bytes from the file
             string content = Encoding.UTF8.GetString(fileBytes); // Convert bytes to string
                 
@@ -419,7 +418,7 @@ namespace FindInFile.ViewModel
                   lineNumber++;
                   if (line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0) // Case-insensitive search
                   {
-                     foundResults.Add(new SearchResult { FilePath = filePath, LineNumber = lineNumber });
+                     foundResults.Add(new SearchResult { FilePath = filePath, LineNumber = lineNumber, FileSize = Convert.ToUInt64(fileInfo.Length / 1024.0)});
                   }
                }
 
@@ -474,13 +473,13 @@ namespace FindInFile.ViewModel
                {
                   SearchPaths.Add(sPath);
                }
-               foreach (string sPath in SearchHistory.Extension)
+               foreach (string sExt in SearchHistory.Extension)
                {
-                  SearchExtensions.Add(sPath);
+                  SearchExtensions.Add(sExt);
                }
-               foreach (string sPath in SearchHistory.Text)
+               foreach (string sText in SearchHistory.Text)
                {
-                  SearchTexts.Add(sPath);
+                  SearchTexts.Add(sText);
                }
             }
          }
