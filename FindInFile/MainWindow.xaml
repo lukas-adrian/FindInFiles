@@ -54,11 +54,14 @@
             <ColumnDefinition Width="4" x:Name="SplitterColumn"/> <!--Splitter -->
             <ColumnDefinition Width="400" x:Name="PreviewColumn"/> <!-- Preview area, initially hidden -->
         </Grid.ColumnDefinitions>
-        <Grid>
+        
+        <!-- Buttons -->
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="35"></RowDefinition>
                 <RowDefinition Height="60" x:Name="TextSearchRow"></RowDefinition>
                 <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="20"></RowDefinition>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"></ColumnDefinition>
@@ -209,16 +212,26 @@
                     Margin="5"
                     Click="ButPath_Click" />
                 
+                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
+                    <CheckBox 
+                        Content="Include Subdirectories"
+                        ToolTip="Search also in the subdirectories"
+                        HorizontalAlignment="Left"
+                        Margin="5,0,5,0"
+                        Name="chbSubDirs"
+                        IsChecked="{Binding SubDirs}"/>
+                
+                    <Button 
+                        Style="{StaticResource ModernButton}"
+                        Name="butExpandTree"
+                        Click="ButExpandTree_Click"
+                        ToolTip="Expand whole result tree"
+                        Content="Expand Tree"
+                        Margin="5,0,5,0"/>
+                    
+                </StackPanel>
                 <!-- Subdirecotries -->
-                <CheckBox 
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    Content="Include Subdirectories"
-                    ToolTip="Search also in the subdirectories"
-                    HorizontalAlignment="Left"
-                    Margin="5,0,5,0"
-                    Name="chbSubDirs"
-                    IsChecked="{Binding SubDirs}"/>
+
                 
                 <!-- Options -->
                 <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" FlowDirection="LeftToRight" Orientation="Horizontal">
@@ -274,28 +287,59 @@
                     Content=">>>"
                     Margin="5,0,5,0"/>
             </Grid>
-
-            <!-- Row 2: DataGrid for Results -->
-            <DataGrid Grid.Row="2" 
-                      Grid.ColumnSpan="3"
-                      Grid.Column="0"
-                      IsReadOnly="True"
-                      Name="dgResult"
-                      AutoGenerateColumns="False"
-                      RowStyle="{StaticResource DataRowStyle}"
-                      SelectedCellsChanged="DataGridResults_OnSelectedCellsChanged"
-                      ItemsSource="{Binding SearchResultList}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Path" Binding="{Binding FilePath}" Width="Auto"/>
-                    <DataGridTextColumn Header="Size (Kb)" Binding="{Binding FileSize}" Width="Auto"/>
-                    <DataGridTextColumn Header="Line Number" Binding="{Binding LineNumber}" Width="Auto"/>
-                </DataGrid.Columns>
-            </DataGrid>
+            
+            <TreeView 
+                Grid.Row="2"
+                Grid.ColumnSpan="3"
+                Grid.Column="0"
+                Name="tvResult"
+                ItemsSource="{Binding SearchResultList}"
+                SelectedItemChanged="TvResult_OnSelectedItemChanged">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.Resources>
+                    <HierarchicalDataTemplate DataType="{x:Type classes:SearchResult}" ItemsSource="{Binding FoundItems}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="100" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding FilePath}" TextWrapping="NoWrap" Grid.Column="0" />
+                            <TextBlock Text="{Binding FileSize}" Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                            <TextBlock Text="{Binding Count}" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                        </Grid>
+                        <HierarchicalDataTemplate.ItemTemplate>
+                            <DataTemplate DataType="{x:Type classes:FoundItem}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="50" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding LineNumber}" Grid.Column="0" />
+                                    <TextBlock Text="{Binding Result}" Grid.Column="1"  TextWrapping="NoWrap" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                                </Grid>
+                            </DataTemplate>
+                        </HierarchicalDataTemplate.ItemTemplate>
+                    </HierarchicalDataTemplate>
+                </TreeView.Resources>
+            </TreeView>
+            
+                        
+            <StatusBar Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="3">
+                <StatusBarItem>
+                    <TextBlock Name="tbStatusBar" Text="" />
+                </StatusBarItem>
+            </StatusBar>
             
         </Grid>
 
-        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                      ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Background="Gray" DragCompleted="PreViewSplitter_OnDragCompleted"/>
+        <!-- Splitter -->
+        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="gsSplitter"
+                       ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Background="Gray" DragCompleted="PreViewSplitter_OnDragCompleted"/>
 
         <!-- Preview Area -->
         <Grid Grid.Column="2">
@@ -304,7 +348,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
            
-            <Grid>
+            <Grid Grid.Row="0">
                 <avalonEdit:TextEditor
                                        Name="tbPreview"
                                        FontFamily="Consolas"

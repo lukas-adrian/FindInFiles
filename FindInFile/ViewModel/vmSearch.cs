@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using FindInFile.Classes;
 using FindInFile.Model;
@@ -207,7 +208,7 @@ namespace FindInFile.ViewModel
          
          try
          {
-            var results = await Task.Run(() => SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, progress, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
+            List<SearchResult> results = await Task.Run(() => SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, progress, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
             SearchResultList = new ObservableCollection<SearchResult>(results);
          }
          catch (OperationCanceledException)
@@ -337,6 +338,7 @@ namespace FindInFile.ViewModel
       #endregion Add/Remove Search Items
 
       #region SearchEngine
+
       
       /// <summary>
       /// 
@@ -379,7 +381,10 @@ namespace FindInFile.ViewModel
                      throw new OperationCanceledException();
                   }
                   
-                  FileContainsTermUsingBytes(file, searchTerm, foundResults);
+                  SearchResult? foundInFile = FileContainsTermUsingBytes(file, searchTerm);
+                  if(foundInFile != null)
+                     foundResults.Add(foundInFile);
+                  
                   processedFiles++;
                   int percentage = (int)((processedFiles / (float)totalFiles) * 100);
                   progress?.Report(percentage);
@@ -399,16 +404,18 @@ namespace FindInFile.ViewModel
       /// </summary>
       /// <param name="filePath"></param>
       /// <param name="searchTerm"></param>
-      /// <param name="foundResults"></param>
-      private void FileContainsTermUsingBytes(string filePath, string searchTerm, List<SearchResult> foundResults)
+      private SearchResult? FileContainsTermUsingBytes(string filePath, string searchTerm)
       {
+         SearchResult? foundResults = null;
+
          try
          {
             FileInfo fileInfo = new(filePath);
             
             byte[] fileBytes = File.ReadAllBytes(filePath); // Read all bytes from the file
             string content = Encoding.UTF8.GetString(fileBytes); // Convert bytes to string
-                
+
+            
             int lineNumber = 0;
             using (StringReader reader = new(content))
             {
@@ -416,10 +423,28 @@ namespace FindInFile.ViewModel
                while ((line = reader.ReadLine()) != null)
                {
                   lineNumber++;
-                  if (line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0) // Case-insensitive search
+                  int nFoundIndex = line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase);
+                  if (nFoundIndex >= 0)
                   {
-                     foundResults.Add(new SearchResult { FilePath = filePath, LineNumber = lineNumber, FileSize = Convert.ToUInt64(fileInfo.Length / 1024.0)});
+                     if (foundResults == null)
+                     {
+                        foundResults = new SearchResult
+                        {
+                           FilePath = filePath,
+                           FileSizeBytes = (Convert.ToUInt64(fileInfo.Length)),
+                           FileSize = $"Size: {Convert.ToUInt64(fileInfo.Length / 1024.0)} (kB)"
+                        };
+                     }
+
+                     FoundItem item = new FoundItem();
+                     item.LineNumber = lineNumber;
+                     item.Result = line.Trim();
+                     
+                     foundResults.FoundItems.Add(item);
                   }
+
+                  if(foundResults != null)
+                     foundResults.Count = $"Count: {Convert.ToUInt32(foundResults.FoundItems.Count)}";
                }
 
                if (!dicLineNumbers.ContainsKey(filePath))
@@ -430,6 +455,8 @@ namespace FindInFile.ViewModel
          {
             MessageBox.Show($"Error reading file {filePath}: {ex.Message}");
          }
+
+         return foundResults;
       }
       
       #endregion SearchEngine
