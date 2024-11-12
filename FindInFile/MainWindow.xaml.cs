@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -90,42 +91,46 @@ namespace FindInFile
             SearchResult? sr = dgResult.SelectedItem as SearchResult;
             if (sr == null) return;
             
+            vmSearch vm = DataContext as vmSearch;
+
+            
             string sFilePath = sr.FilePath;
             int nLineNumber = sr.LineNumber;
 
-            if (string.Compare(_sLastPreviewFile, sFilePath, StringComparison.OrdinalIgnoreCase) == 0)
-                return;
-
-            _sLastPreviewFile = sFilePath;
-            vmSearch vm = DataContext as vmSearch;
-            
-            if (vm.dicLineNumbers.TryGetValue(sFilePath, out UInt64 outByteLength))
+            if (string.Compare(_sLastPreviewFile, sFilePath, StringComparison.OrdinalIgnoreCase) != 0)
             {
-                if (outByteLength > (ONE_MB * vm.MaxPreviewSize))
+                _sLastPreviewFile = sFilePath;
+            
+                tbPreview.IsReadOnly = true;
+                tbPreview.ShowLineNumbers = true;
+                
+                if (vm.dicLineNumbers.TryGetValue(sFilePath, out UInt64 outByteLength))
                 {
-                    StringBuilder sbText = new StringBuilder();
-                    sbText.AppendLine($"File {Path.GetFileName(sFilePath)} is bigger than {vm.MaxPreviewSize} MB");
-                    sbText.AppendLine($"Current File size is {((double)outByteLength / (double)ONE_MB).ToString("0.00")} MB");
+                    if (outByteLength > (ONE_MB * vm.MaxPreviewSize))
+                    {
+                        StringBuilder sbText = new StringBuilder();
+                        sbText.AppendLine($"File {Path.GetFileName(sFilePath)} is bigger than {vm.MaxPreviewSize} MB");
+                        sbText.AppendLine($"Current File size is {((double)outByteLength / (double)ONE_MB).ToString("0.00", CultureInfo.CurrentUICulture)} MB");
                     
-                    tbPreview.Text = sbText.ToString();
-                    return;
+                        tbPreview.Text = sbText.ToString();
+                        return;
+                    }
                 }
+                
+                tbPreview.Load(sFilePath);
+
             }
 
-
-            tbPreview.IsReadOnly = true;
-            tbPreview.ShowLineNumbers = true;
-            tbPreview.Load(sFilePath);
             tbPreview.ScrollToLine(nLineNumber);
-            tbPreview.Select(nLineNumber,15);
+            tbPreview.Select(nLineNumber, 15);
             
+            //Select the line
             int offset = tbPreview.Document.GetOffset(nLineNumber, 0); // Get the offset of the start of the line
             var line = tbPreview.Document.GetLineByNumber(nLineNumber); // Get the length of the line
             int lineLength = 0;
             if (line != null)
             {
                 lineLength = line.Length;
-                // Use lineLength as needed
             }
             
             tbPreview.SelectionStart = offset;
@@ -184,7 +189,7 @@ namespace FindInFile
         private void CbSearchText_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            vm.AddItemToExt(cbSearchText.SelectedItem?.ToString());
+            vm.AddItemToText(cbSearchText.SelectedItem?.ToString());
         }
 
         /// <summary>
@@ -195,7 +200,7 @@ namespace FindInFile
         private void CbSearchExt_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            vm.AddItemToText(cbSearchExt.SelectedItem?.ToString());
+            vm.AddItemToExt(cbSearchExt.SelectedItem?.ToString());
         }
 
         /// <summary>
@@ -336,7 +341,7 @@ namespace FindInFile
         
             butSearch.IsEnabled = false;
         
-            vm.AddItemsSearchHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text);
+            vm.AddItemsSearchHistory(cbSearchText.Text, cbSearchPath.Text, cbSearchExt.Text);
         }
         
         /// <summary>

@@ -7,6 +7,7 @@ public class SearchResult
 {
    public string FilePath { get; set; }
    public int LineNumber { get; set; }
+   public UInt64 FileSize { get; set; }
 }
 
 /// <summary>
