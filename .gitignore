@@ -1,3 +1,7 @@
 /.idea/
 /.vs/
 /InFileSearcher.sln.DotSettings.user
+/FindInFile/bin/
+/FindInFile/obj/
+/ICSharpCode.AvalonEdit/bin/
+/ICSharpCode.AvalonEdit/obj/
