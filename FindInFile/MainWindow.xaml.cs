@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using FindInFile.Classes;
 using FindInFile.ProgressBarWindow;
 using FindInFile.ViewModel;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -29,16 +30,7 @@ namespace FindInFile
             public bool SubDirs { get; set; }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        private class SearchResult
-        {
-            public string FilePath { get; set; }
-            public int LineNumber { get; set; }
-        }
 
-        private readonly string HistoryFilePath = "searchHistory.json";
         private readonly string SettingsFilePath = "settings.json";
 
         private GridLength _gLengthPreviewWidth = new(400);
@@ -50,7 +42,6 @@ namespace FindInFile
         private ProgressWindow _pgWindow;
 
         private const UInt32 ONE_MB = 1048576;
-        private static Dictionary<string, UInt64> dicLineNumbers = new();
         private string _sLastPreviewFile = "";
 
         /// <summary>
@@ -60,8 +51,8 @@ namespace FindInFile
         {
             InitializeComponent();
             
-            var viewModel = new vmSearch();
-            DataContext = viewModel;
+            vmSearch vm = new();
+            DataContext = vm;
             
             Assembly currentAssembly = Assembly.GetEntryAssembly();
             if (currentAssembly == null)
@@ -76,7 +67,7 @@ namespace FindInFile
             string sProductName = ((AssemblyProductAttribute)productAttributes[0]).Product;
             
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            HistoryFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, HistoryFilePath);
+            vm.HistoryFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, "searchHistory.json");
             
             SettingsFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, SettingsFilePath);
             Version? ver = currentAssembly.GetName().Version;
@@ -84,10 +75,10 @@ namespace FindInFile
             if (ver != null)
                sVersNo = ver.ToString();
 
-            viewModel.Title = $"{currentAssembly.GetName().Name} ({sVersNo})";
+            vm.Title = $"{currentAssembly.GetName().Name} ({sVersNo})";
 
-            LoadSettings();
-            LoadHistory(); 
+            vm.LoadSettings(SettingsFilePath);
+            vm.LoadHistory(); 
             
             SplitterColumn.Width = new GridLength(0);
             PreviewColumn.Width = new GridLength(0);
@@ -102,10 +93,17 @@ namespace FindInFile
 
         #region Backgroundworker
         
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void bwSearchDoWork(object sender, DoWorkEventArgs e)
         {
-            SearchArgs? args = (SearchArgs)e.Argument!;
-            var foundResults = SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, (sender as BackgroundWorker));
+            vmSearch vm = DataContext as vmSearch;
+            
+            SearchArgs args = (SearchArgs)e.Argument!;
+            var foundResults = vm.SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, (sender as BackgroundWorker));
             e.Result = foundResults;
             if (_pgWindow.IsCancelled)
             {
@@ -113,11 +111,21 @@ namespace FindInFile
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void bwSearchProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             _pgWindow.UpdateProgress(e.ProgressPercentage);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void bwSearchRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if (e.Error != null)
@@ -165,7 +173,7 @@ namespace FindInFile
             _sLastPreviewFile = sFilePath;
             vmSearch vm = DataContext as vmSearch;
             
-            if (dicLineNumbers.TryGetValue(sFilePath, out UInt64 outByteLength))
+            if (vm.dicLineNumbers.TryGetValue(sFilePath, out UInt64 outByteLength))
             {
                 if (outByteLength > (ONE_MB * vm.MaxPreviewSize))
                 {
@@ -202,137 +210,7 @@ namespace FindInFile
             IHighlightingDefinition HighlightingDefinition = hlManager.GetDefinitionByExtension(extension);
             tbPreview.SyntaxHighlighting = HighlightingDefinition;
         }
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        private void LoadHistory()
-        {
-            // Clear existing items before loading new history
-            vmSearch vm = DataContext as vmSearch;
-            vm.SearchPaths.Clear();
-            vm.SearchExtensions.Clear();
-            vm.SearchTexts.Clear();
 
-            if (File.Exists(HistoryFilePath))
-            {
-                var json = File.ReadAllText(HistoryFilePath);
-                _SearchHistory = JsonConvert.DeserializeObject<SearchHistory>(json);
-
-                if (_SearchHistory != null)
-                {
-
-                    foreach (string sPath in _SearchHistory.Path)
-                    {
-                        vm.SearchPaths.Add(sPath);
-                    }
-                    foreach (string sPath in _SearchHistory.Extension)
-                    {
-                        vm.SearchExtensions.Add(sPath);
-                    }
-                    foreach (string sPath in _SearchHistory.Text)
-                    {
-                        vm.SearchTexts.Add(sPath);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private void SaveHistory()
-        {
-            if (File.Exists(HistoryFilePath))
-            {
-                var json = File.ReadAllText(HistoryFilePath);
-                _SearchHistory = JsonConvert.DeserializeObject<SearchHistory>(json) ?? new SearchHistory();
-            }
-            else
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(HistoryFilePath));
-                _SearchHistory = new SearchHistory();
-            }
-
-            _SearchHistory.Path.Add(cbSearchPath.Text);
-            _SearchHistory.Extension.Add(cbSearchExt.Text);
-            _SearchHistory.Text.Add(cbSearchText.Text);
-            
-            var updatedJson = JsonConvert.SerializeObject(_SearchHistory, Formatting.Indented);
-            File.WriteAllText(HistoryFilePath, updatedJson); // Save to file
-            
-            
-            vmSearch vm = DataContext as vmSearch;
-                
-            vm.SearchPaths = new ObservableCollection<String>(_SearchHistory.Path);
-            vm.SearchExtensions = new ObservableCollection<String>(_SearchHistory.Extension);
-            vm.SearchTexts = new ObservableCollection<String>(_SearchHistory.Text);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private void LoadSettings()
-        {
-            vmSearch vm = DataContext as vmSearch;
-            if (!File.Exists(SettingsFilePath))
-            {//Default value
-                vm.MaxPreviewSize = 5;
-            }
-            else
-            {
-                string json = File.ReadAllText(SettingsFilePath);
-                var jsonObject = JsonConvert.DeserializeAnonymousType(json, new { MaxPreviewSize = 0 });
-                vm.MaxPreviewSize = Convert.ToUInt32(jsonObject.MaxPreviewSize);
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="path"></param>
-        /// <param name="extensions"></param>
-        /// <param name="searchTerm"></param>
-        /// <param name="subDirs"></param>
-        /// <returns></returns>
-        private List<SearchResult> SearchInFolder(string path, string extensions, string searchTerm, bool subDirs, BackgroundWorker? worker)
-        {
-            dicLineNumbers = new Dictionary<String, UInt64>();
-            var foundResults = new List<SearchResult>();
-            var extensionList = extensions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(ext => ext.Trim()).ToList(); // Trim whitespace
-
-            try
-            {
-                int totalFiles = 0;
-                int processedFiles = 0;
-                
-                foreach (var extension in extensionList)
-                {
-                    IEnumerable<String> files = null;
-
-                    if (subDirs)
-                        files = Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.AllDirectories);
-                    else
-                        files = Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.TopDirectoryOnly);
-
-                    totalFiles += files.Count();
-                        
-                    foreach (var file in files)
-                    {
-                        FileContainsTermUsingBytes(file, searchTerm, foundResults);
-                        processedFiles++;
-                        worker.ReportProgress((int)((processedFiles / (float)totalFiles) * 100));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error searching in folder: {ex.Message}");
-            }
-
-            return foundResults;
-        }
 
 
         /// <summary>
@@ -344,41 +222,7 @@ namespace FindInFile
             dgResult.ItemsSource = results; // Bind results to DataGrid
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="searchTerm"></param>
-        /// <param name="foundResults"></param>
-        private void FileContainsTermUsingBytes(string filePath, string searchTerm, List<SearchResult> foundResults)
-        {
-            try
-            {
-                byte[] fileBytes = File.ReadAllBytes(filePath); // Read all bytes from the file
-                string content = Encoding.UTF8.GetString(fileBytes); // Convert bytes to string
-                
-                int lineNumber = 0;
-                using (StringReader reader = new(content))
-                {
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        lineNumber++;
-                        if (line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0) // Case-insensitive search
-                        {
-                            foundResults.Add(new SearchResult { FilePath = filePath, LineNumber = lineNumber });
-                        }
-                    }
 
-                    if (!dicLineNumbers.ContainsKey(filePath))
-                        dicLineNumbers.Add(filePath, (UInt64)fileBytes.Length);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error reading file {filePath}: {ex.Message}");
-            }
-        }
 
 
         #endregion private Functions
@@ -402,8 +246,9 @@ namespace FindInFile
         /// <param name="e"></param>
         private void CbSearchPath_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            vmSearch vm = DataContext as vmSearch;
             if (cbSearchPath.SelectedItem != null)
-                SaveHistory(); // Save history whenever selection changes
+                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save history whenever selection changes
         }
 
         /// <summary>
@@ -413,8 +258,9 @@ namespace FindInFile
         /// <param name="e"></param>
         private void CbSearchText_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            vmSearch vm = DataContext as vmSearch;
             if (cbSearchText.SelectedItem != null)
-                SaveHistory(); // Save history whenever selection changes
+                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save history whenever selection changes
         }
 
         /// <summary>
@@ -424,8 +270,9 @@ namespace FindInFile
         /// <param name="e"></param>
         private void CbSearchExt_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
+            vmSearch vm = DataContext as vmSearch;
             if (cbSearchExt.SelectedItem != null)
-                SaveHistory(); // Save history whenever selection changes
+                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save history whenever selection changes
         }
 
         /// <summary>
@@ -502,7 +349,7 @@ namespace FindInFile
                     vm.SearchPaths.Add(selectedPath);
 
                 cbSearchPath.SelectedItem = selectedPath; // Set selected path
-                SaveHistory(); // Save updated history
+                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save updated history
             }
         }
 
@@ -514,7 +361,11 @@ namespace FindInFile
         private void ButSearch_Click(object sender, RoutedEventArgs e)
         {
             string folderPath = cbSearchPath.Text; // Get folder path from ComboBox
+            if (!Directory.Exists(folderPath)) return;
+            
             string searchTerm = cbSearchText.Text; // Get search term from ComboBox
+            if (string.IsNullOrEmpty(searchTerm)) return;
+            
             string fileExtensions = cbSearchExt.Text; // Get file extension from ComboBox
 
             bool bSubDirs = chbSubDirs.IsChecked!.Value;
@@ -529,9 +380,9 @@ namespace FindInFile
             butSearch.IsEnabled = false; // Disable the button to prevent multiple searches
             
             
-
+            vmSearch vm = DataContext as vmSearch;
             // Save history after search
-            SaveHistory();
+            vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text);
         }
         
         /// <summary>
@@ -555,6 +406,11 @@ namespace FindInFile
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ShowInExplorer_Click(object sender, RoutedEventArgs e)
         {
             SearchResult? sr = dgResult.SelectedItem as SearchResult;
@@ -585,7 +441,7 @@ namespace FindInFile
             vm.SearchExtensions.Clear();
             vm.SearchTexts.Clear();
             
-            File.Delete(HistoryFilePath);
+            File.Delete(vm.HistoryFilePath);
         }
 
         /// <summary>
@@ -604,7 +460,28 @@ namespace FindInFile
             // Save the JSON to a file
             File.WriteAllText(SettingsFilePath, json);
         }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void RemoveButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
 
+            if (button?.CommandParameter is Object[] objParameters)
+            {
+                vmSearch vm = DataContext as vmSearch;
+                
+                if(objParameters[0] == cbSearchText)
+                    vm.RemoveItemText(objParameters[1].ToString());
+                else if(objParameters[0] == cbSearchPath)
+                    vm.RemoveItemPath(objParameters[1].ToString());
+                else if(objParameters[0] == cbSearchExt)
+                    vm.RemoveItemExt(objParameters[1].ToString());
+            }
+        }
 
         #endregion Events
 
