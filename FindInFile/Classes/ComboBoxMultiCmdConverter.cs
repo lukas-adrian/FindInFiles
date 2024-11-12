@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
 
-namespace FindInFile;
+namespace FindInFile.Classes;
 
 public class ComboBoxMultiCmdConverter : IMultiValueConverter
 {

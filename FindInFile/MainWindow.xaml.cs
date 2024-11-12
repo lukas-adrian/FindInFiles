@@ -7,7 +7,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using FindInFile.Classes;
 using FindInFile.ProgressBarWindow;
 using FindInFile.ViewModel;
@@ -18,27 +17,10 @@ namespace FindInFile
 {
     public partial class MainWindow : Window
     {
-            
-        /// <summary>
-        /// 
-        /// </summary>
-        private class SearchArgs
-        {
-            public string Path { get; set; }
-            public string Extensions { get; set; }
-            public string SearchTerm { get; set; }
-            public bool SubDirs { get; set; }
-        }
-
-
-        private readonly string SettingsFilePath = "settings.json";
-
         private GridLength _gLengthPreviewWidth = new(400);
         private readonly GridLength _gLengthOptionsHeight = new(20);
 
         private SearchHistory _SearchHistory;
-        
-        private BackgroundWorker _bwSearch;
         private ProgressWindow _pgWindow;
 
         private const UInt32 ONE_MB = 1048576;
@@ -51,8 +33,7 @@ namespace FindInFile
         {
             InitializeComponent();
             
-            vmSearch vm = new();
-            DataContext = vm;
+
             
             Assembly currentAssembly = Assembly.GetEntryAssembly();
             if (currentAssembly == null)
@@ -67,9 +48,12 @@ namespace FindInFile
             string sProductName = ((AssemblyProductAttribute)productAttributes[0]).Product;
             
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            vm.HistoryFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, "searchHistory.json");
+            string sHistoryFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, "searchHistory.json");
+            string sSettingsFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, "settings.json");
+            vmSearch vm = new(sSettingsFilePath, sHistoryFilePath);
             
-            SettingsFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, SettingsFilePath);
+            DataContext = vm;
+
             Version? ver = currentAssembly.GetName().Version;
             String sVersNo = "unkown Version";
             if (ver != null)
@@ -77,76 +61,18 @@ namespace FindInFile
 
             vm.Title = $"{currentAssembly.GetName().Name} ({sVersNo})";
 
-            vm.LoadSettings(SettingsFilePath);
+            vm.LoadSettings();
             vm.LoadHistory(); 
             
             SplitterColumn.Width = new GridLength(0);
             PreviewColumn.Width = new GridLength(0);
             
-            _bwSearch = new BackgroundWorker();
-            _bwSearch.DoWork += bwSearchDoWork;
-            _bwSearch.ProgressChanged += bwSearchProgressChanged;
-            _bwSearch.RunWorkerCompleted += bwSearchRunWorkerCompleted;
-            _bwSearch.WorkerReportsProgress = true;
+            vm.ProgressChanged += Vm_ProgressChanged;
+            vm.ProgressCompleted += Vm_ProgressCompleted;
         }
 
 
-        #region Backgroundworker
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void bwSearchDoWork(object sender, DoWorkEventArgs e)
-        {
-            vmSearch vm = DataContext as vmSearch;
-            
-            SearchArgs args = (SearchArgs)e.Argument!;
-            var foundResults = vm.SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, (sender as BackgroundWorker));
-            e.Result = foundResults;
-            if (_pgWindow.IsCancelled)
-            {
-                e.Cancel = true;
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void bwSearchProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            _pgWindow.UpdateProgress(e.ProgressPercentage);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void bwSearchRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (e.Error != null)
-            {
-                MessageBox.Show($"Error searching in folder: {e.Error.Message}");
-            }
-            else if (e.Cancelled)
-            {
-                MessageBox.Show("Search cancelled.");
-            }
-            else
-            {
-                // Update UI with search results
-                UpdateUIWithResults((List<SearchResult>)e.Result);
-            }
-            butSearch.IsEnabled = true; // Enable the button again
-            _pgWindow.Close();
-        }
-        
-        #endregion Backgroundworker
-        
+      
         #region private Functions
         
         /// <summary>
@@ -213,14 +139,14 @@ namespace FindInFile
 
 
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="results"></param>
-        private void UpdateUIWithResults(List<SearchResult> results)
-        {
-            dgResult.ItemsSource = results; // Bind results to DataGrid
-        }
+        // /// <summary>
+        // /// 
+        // /// </summary>
+        // /// <param name="results"></param>
+        // private void UpdateUIWithResults(List<SearchResult> results)
+        // {
+        //     dgResult.ItemsSource = results; // Bind results to DataGrid
+        // }
 
 
 
@@ -247,8 +173,7 @@ namespace FindInFile
         private void CbSearchPath_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            if (cbSearchPath.SelectedItem != null)
-                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save history whenever selection changes
+            vm.AddItemToPath(cbSearchPath.SelectedItem?.ToString());
         }
 
         /// <summary>
@@ -259,8 +184,7 @@ namespace FindInFile
         private void CbSearchText_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            if (cbSearchText.SelectedItem != null)
-                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save history whenever selection changes
+            vm.AddItemToExt(cbSearchText.SelectedItem?.ToString());
         }
 
         /// <summary>
@@ -271,8 +195,7 @@ namespace FindInFile
         private void CbSearchExt_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            if (cbSearchExt.SelectedItem != null)
-                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save history whenever selection changes
+            vm.AddItemToText(cbSearchExt.SelectedItem?.ToString());
         }
 
         /// <summary>
@@ -349,9 +272,31 @@ namespace FindInFile
                     vm.SearchPaths.Add(selectedPath);
 
                 cbSearchPath.SelectedItem = selectedPath; // Set selected path
-                vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text); // Save updated history
+                vm.AddItemToPath(cbSearchPath.Text);
             }
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="percent"></param>
+        private void Vm_ProgressChanged(object sender, int percent)
+        {
+            _pgWindow.UpdateProgress(percent); // Update progress bar in ProgressWindow
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Vm_ProgressCompleted(object sender, EventArgs e)
+        {
+            _pgWindow.Close(); // Close ProgressWindow on completion
+            butSearch.IsEnabled = true;
+        }
+        
 
         /// <summary>
         /// 
@@ -370,19 +315,28 @@ namespace FindInFile
 
             bool bSubDirs = chbSubDirs.IsChecked!.Value;
             
-            _pgWindow = new ProgressWindow();
+            vmSearch vm = DataContext as vmSearch;
+            
+            vm.CancellationTokenSource = new CancellationTokenSource();
+            _pgWindow = new ProgressWindow(vm.CancellationTokenSource);
             _pgWindow.Owner = this;
             _pgWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             _pgWindow.Show();
-
             
-            _bwSearch.RunWorkerAsync(new SearchArgs { Path = folderPath, Extensions = fileExtensions, SearchTerm = searchTerm, SubDirs = bSubDirs });
-            butSearch.IsEnabled = false; // Disable the button to prevent multiple searches
-            
-            
-            vmSearch vm = DataContext as vmSearch;
-            // Save history after search
-            vm.SaveHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text);
+            // Execute command instead of BackgroundWorker
+            var args = new SearchArgs 
+            { 
+                Path = folderPath, 
+                Extensions = fileExtensions, 
+                SearchTerm = searchTerm, 
+                SubDirs = bSubDirs 
+            };
+        
+            (DataContext as vmSearch)?.SearchCommand.Execute(args);
+        
+            butSearch.IsEnabled = false;
+        
+            vm.AddItemsSearchHistory(cbSearchPath.Text, cbSearchExt.Text, cbSearchText.Text);
         }
         
         /// <summary>
@@ -436,12 +390,7 @@ namespace FindInFile
         private void ButDelHistory_Click(Object sender, RoutedEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            
-            vm.SearchPaths.Clear();
-            vm.SearchExtensions.Clear();
-            vm.SearchTexts.Clear();
-            
-            File.Delete(vm.HistoryFilePath);
+            vm.DeleteHistory();
         }
 
         /// <summary>
@@ -452,13 +401,8 @@ namespace FindInFile
         private void MainWindow_OnClosing(Object? sender, CancelEventArgs e)
         {
             vmSearch vm = DataContext as vmSearch;
-            var jsonObject = new
-            {
-                MaxPreviewSize = vm.MaxPreviewSize
-            };
-            string json = JsonConvert.SerializeObject(jsonObject);
-            // Save the JSON to a file
-            File.WriteAllText(SettingsFilePath, json);
+            vm.SaveHistory();
+            vm.SaveSettings();
         }
         
         /// <summary>

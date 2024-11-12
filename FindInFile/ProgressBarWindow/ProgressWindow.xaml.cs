@@ -3,33 +3,48 @@ using System.Windows;
 
 namespace FindInFile.ProgressBarWindow;
 
+/// <summary>
+/// Waiting Bar
+/// </summary>
 public partial class ProgressWindow : Window
 {
-   private bool _isCancelled = false;
+
+   /// <summary>Cancel the process</summary>
+   private CancellationTokenSource _cancellationTokenSource;
    
-   public ProgressWindow()
+   /// <summary>
+   /// 
+   /// </summary>
+   /// <param name="cancellationTokenSource"></param>
+   public ProgressWindow(CancellationTokenSource cancellationTokenSource)
    {
       InitializeComponent();
+      
+      _cancellationTokenSource = cancellationTokenSource;
    }
    
+   /// <summary>
+   /// 
+   /// </summary>
+   /// <param name="percentage"></param>
    public void UpdateProgress(int percentage)
    {
       progressBar.Value = percentage;
       textBlockProgress.Text = $"Processing... {percentage}%";
-      if (percentage == 100)
+      if (percentage >= 100)
       {
          Close();
       }
    }
 
-   public bool IsCancelled
-   {
-      get { return _isCancelled; }
-   }
-
+   /// <summary>
+   /// 
+   /// </summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
    private void butCancel_Click(object sender, RoutedEventArgs e)
    {
-      _isCancelled = true;
-      Close();
+      _cancellationTokenSource?.Cancel();
+       Close();
    }
 }

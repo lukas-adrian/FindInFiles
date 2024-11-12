@@ -6,11 +6,12 @@
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:vm="clr-namespace:FindInFile.ViewModel"
         xmlns:findInFile="clr-namespace:FindInFile"
+        xmlns:classes="clr-namespace:FindInFile.Classes"
         mc:Ignorable="d"
         Title="{Binding Title}" Height="450" Width="800" Closing="MainWindow_OnClosing">
     
     <Window.Resources>
-        <findInFile:ComboBoxMultiCmdConverter x:Key="ComboBoxMultiCmdConverter"/>
+        <classes:ComboBoxMultiCmdConverter x:Key="ComboBoxMultiCmdConverter"/>
         
         <ContextMenu x:Key="RowMenu">
             <MenuItem Header="Open File" Click="OpenFile_Click"/>
@@ -281,7 +282,8 @@
                       Name="dgResult"
                       AutoGenerateColumns="False"
                       RowStyle="{StaticResource DataRowStyle}"
-                      SelectedCellsChanged="DataGridResults_OnSelectedCellsChanged">
+                      SelectedCellsChanged="DataGridResults_OnSelectedCellsChanged"
+                      ItemsSource="{Binding SearchResultList}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" Width="*"/>
                     <DataGridTextColumn Header="Line Number" Binding="{Binding LineNumber}" Width="*"/>
