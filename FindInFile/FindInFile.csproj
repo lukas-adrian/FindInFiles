@@ -52,4 +52,8 @@
       </None>
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="System.ObjectModel" />
+    </ItemGroup>
+
 </Project>

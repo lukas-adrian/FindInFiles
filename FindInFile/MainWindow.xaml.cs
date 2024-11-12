@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using FindInFile.Classes;
 using FindInFile.ProgressBarWindow;
 using FindInFile.ViewModel;
@@ -76,26 +77,47 @@ namespace FindInFile
       
         #region private Functions
         
+                
         /// <summary>
         /// 
         /// </summary>
-        private void ShowCurrentFileInPrewView()
+        private void ExpandTree()
         {
-            if (_gLengthPreviewWidth.Value == 0)
-                return;
-            
-            if (dgResult.SelectedItem == null)
-                return;
-            
+            // Disable processing of the Dispatcher queue to improve performance
+            using (Dispatcher.DisableProcessing())
+            {
+                ExpandTreeItems(tvResult.Items);
+            }
 
-            SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            if (sr == null) return;
+            void ExpandTreeItems(ItemCollection items)
+            {
+                foreach (var item in items)
+                {
+                    var treeViewItem = tvResult.ItemContainerGenerator.ContainerFromItem(item) as TreeViewItem;
+                    if (treeViewItem != null)
+                    {
+                        treeViewItem.IsExpanded = true; // Expand current item
+
+                        // Process child items
+                        ExpandTreeItems(treeViewItem.Items);
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        private void ShowCurrentFileInPrewView(SearchResult searchResult, int LineNumberSelectIn = 0)
+        {
+            if (PreviewColumn.Width.Value == 0)
+                return;
+            
+            if (searchResult == null) return;
             
             vmSearch vm = DataContext as vmSearch;
-
             
-            string sFilePath = sr.FilePath;
-            int nLineNumber = sr.LineNumber;
+            string sFilePath = searchResult.FilePath;
 
             if (string.Compare(_sLastPreviewFile, sFilePath, StringComparison.OrdinalIgnoreCase) != 0)
             {
@@ -121,20 +143,24 @@ namespace FindInFile
 
             }
 
-            tbPreview.ScrollToLine(nLineNumber);
-            tbPreview.Select(nLineNumber, 15);
-            
-            //Select the line
-            int offset = tbPreview.Document.GetOffset(nLineNumber, 0); // Get the offset of the start of the line
-            var line = tbPreview.Document.GetLineByNumber(nLineNumber); // Get the length of the line
-            int lineLength = 0;
-            if (line != null)
+            if (LineNumberSelectIn != 0)
             {
-                lineLength = line.Length;
-            }
+                tbPreview.ScrollToLine(LineNumberSelectIn);
+                tbPreview.Select(LineNumberSelectIn, 15);
             
-            tbPreview.SelectionStart = offset;
-            tbPreview.SelectionLength = lineLength;
+                //Select the line
+                int offset = tbPreview.Document.GetOffset(LineNumberSelectIn, 0); // Get the offset of the start of the line
+                var line = tbPreview.Document.GetLineByNumber(LineNumberSelectIn); // Get the length of the line
+                int lineLength = 0;
+                if (line != null)
+                {
+                    lineLength = line.Length;
+                }
+            
+                tbPreview.SelectionStart = offset;
+                tbPreview.SelectionLength = lineLength;
+            }
+
             
             HighlightingManager? hlManager = HighlightingManager.Instance;
             string extension = System.IO.Path.GetExtension(sFilePath);
@@ -210,13 +236,24 @@ namespace FindInFile
         /// <param name="e"></param>
         private void ButPreview_Click(Object sender, RoutedEventArgs e)
         {
-            if (PreviewColumn.Width.Value == 0) // If preview panel is hidden
+            if (PreviewColumn.Width.Value == 0)
             {
-                SplitterColumn.Width = new GridLength(4); // Set width to show panel
-                PreviewColumn.Width = _gLengthPreviewWidth; // Set width to show panel
+                SplitterColumn.Width = new GridLength(4);
+                PreviewColumn.Width = _gLengthPreviewWidth;
                 butPreview.Content = "<<<";
-                
-                ShowCurrentFileInPrewView();
+                 
+                 if (tvResult.SelectedItem is FoundItem foundItem)
+                 {
+                     // Find the parent SearchResult
+                     foreach (var searchResult in tvResult.ItemsSource as ObservableCollection<SearchResult>)
+                     {
+                         if (searchResult.FoundItems.Contains(foundItem))
+                         {
+                             ShowCurrentFileInPrewView(searchResult, foundItem.LineNumber);
+                             break;
+                         }
+                     }
+                 }
             }
             else
             {
@@ -243,16 +280,110 @@ namespace FindInFile
                 TextSearchRow.Height = new GridLength(TextSearchRow.Height.Value - _gLengthOptionsHeight.Value);
             }
         }
+        
+        
+        private void TvResult_OnSelectedItemChanged(Object sender, RoutedPropertyChangedEventArgs<Object> e)
+        {
+            FoundItem selectedItem = e.NewValue as FoundItem;
+
+            if (selectedItem is FoundItem foundItem)
+            {
+                // Find the parent SearchResult
+                foreach (var searchResult in (sender as TreeView).ItemsSource as ObservableCollection<SearchResult>)
+                {
+                    if (searchResult.FoundItems.Contains(foundItem))
+                    {
+                        ShowCurrentFileInPrewView(searchResult, selectedItem.LineNumber);
+                        break;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DataGridResults_OnSelectedCellsChanged(Object sender, SelectedCellsChangedEventArgs e)
+        private void DataGridResults_OnSelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
-            ShowCurrentFileInPrewView();
+            // if (dgResult.SelectedItem == null)
+            //     return;
+            //
+            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
+            //
+            // if (sr != null)
+            // {
+            //     foreach (var cellInfo in e.AddedCells)
+            //     {
+            //         var cell = cellInfo.Column.GetCellContent(cellInfo.Item) as FrameworkElement;
+            //         if (cell != null)
+            //         {
+            //             var listBox = FindVisualChild<ListBox>(cell);
+            //             if (listBox != null && listBox.SelectedItem is int selectedLineNumber)
+            //             {
+            //                 ShowCurrentFileInPrewView(sr, selectedLineNumber);
+            //             }
+            //         }
+            //     }
+            // }
         }
+
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DgSearchResultLineNumber_OnSelectionChanged(Object sender, SelectionChangedEventArgs e)
+        {
+            // var listBox = sender as ListBox;
+            // if (listBox?.SelectedItem == null) return;
+            //
+            // DataGridRow dataGridRow = FindVisualParentDataGridRow(listBox);
+            // dgResult.SelectedItem = dataGridRow.DataContext;
+            //
+            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
+            // if (string.Compare(_sLastPreviewFile, sr.FilePath) == 0)
+            // {
+            //     int selectedLineNumber = (int)listBox.SelectedItem;
+            //     ShowCurrentFileInPrewView(sr, selectedLineNumber);
+            // }
+        }
+
+        
+        private DataGridRow FindVisualParentDataGridRow(DependencyObject child)
+        {
+            while (child != null)
+            {
+                if (child is DataGridRow row)
+                {
+                    return row;
+                }
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return null;
+        }
+
+        // Helper method to find a child element of a given type
+        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T correctlyTyped)
+                {
+                    return correctlyTyped;
+                }
+                var childOfChild = FindVisualChild<T>(child);
+                if (childOfChild != null)
+                {
+                    return childOfChild;
+                }
+            }
+            return null;
+        }
+
         
         /// <summary>
         /// 
@@ -300,6 +431,10 @@ namespace FindInFile
         {
             _pgWindow.Close(); // Close ProgressWindow on completion
             butSearch.IsEnabled = true;
+
+            vmSearch vm = DataContext as vmSearch;
+            tbStatusBar.Text = $"{vm.SearchResultList.Count} found";
+
         }
         
 
@@ -351,18 +486,18 @@ namespace FindInFile
         /// <param name="e"></param>
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
-            SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            if (sr == null)
-                return;
-            
-            if (File.Exists(sr.FilePath))
-            {
-                Process.Start(sr.FilePath);
-            }
-            else
-            {
-                MessageBox.Show("File not found.");
-            }
+            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
+            // if (sr == null)
+            //     return;
+            //
+            // if (File.Exists(sr.FilePath))
+            // {
+            //     Process.Start(sr.FilePath);
+            // }
+            // else
+            // {
+            //     MessageBox.Show("File not found.");
+            // }
         }
 
         /// <summary>
@@ -372,19 +507,19 @@ namespace FindInFile
         /// <param name="e"></param>
         private void ShowInExplorer_Click(object sender, RoutedEventArgs e)
         {
-            SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            if (sr == null)
-                return;
-            
-            if (File.Exists(sr.FilePath))
-            {
-                string arguments = $"/select, \"{sr.FilePath}\"";
-                Process.Start("explorer.exe", arguments);
-            }
-            else
-            {
-                MessageBox.Show("File not found.");
-            }
+            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
+            // if (sr == null)
+            //     return;
+            //
+            // if (File.Exists(sr.FilePath))
+            // {
+            //     string arguments = $"/select, \"{sr.FilePath}\"";
+            //     Process.Start("explorer.exe", arguments);
+            // }
+            // else
+            // {
+            //     MessageBox.Show("File not found.");
+            // }
         }
         
         /// <summary>
@@ -432,8 +567,18 @@ namespace FindInFile
             }
         }
 
-        #endregion Events
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ButExpandTree_Click(Object sender, RoutedEventArgs e)
+        {
+            ExpandTree();
+        } 
+        
+        #endregion Events
     }
 
 }
