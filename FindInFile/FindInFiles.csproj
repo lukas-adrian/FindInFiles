@@ -8,14 +8,41 @@
         <UseWPF>true</UseWPF>
         <Company>AdiSoft</Company>
         <ApplicationIcon>icons\main.ico</ApplicationIcon>
-        <AssemblyVersion>2024.11.13.1</AssemblyVersion>
-        <FileVersion>2024.11.13.1</FileVersion>
-        <StartupObject>FindInFile.App</StartupObject>
-        <Title>InFileSearcher</Title>
+        <AssemblyVersion>2024.11.13.5</AssemblyVersion>
+        <FileVersion>2024.11.13.5</FileVersion>
+        <StartupObject>FindInFiles.App</StartupObject>
+        <Title>FindInFiles</Title>
         <PackageIcon>main128x128.png</PackageIcon>
+        <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <ShouldCreateLogs>True</ShouldCreateLogs>
+      <AdvancedSettingsExpanded>False</AdvancedSettingsExpanded>
+      <UpdateAssemblyVersion>True</UpdateAssemblyVersion>
+      <UpdateAssemblyFileVersion>True</UpdateAssemblyFileVersion>
+      <UpdateAssemblyInfoVersion>False</UpdateAssemblyInfoVersion>
+      <AssemblyVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyVersionSettings>
+      <UpdatePackageVersion>False</UpdatePackageVersion>
+      <AssemblyInfoVersionType>SettingsVersion</AssemblyInfoVersionType>
+      <InheritWinAppVersionFrom>None</InheritWinAppVersionFrom>
+      <AssemblyFileVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyFileVersionSettings>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      <ShouldCreateLogs>True</ShouldCreateLogs>
+      <AdvancedSettingsExpanded>False</AdvancedSettingsExpanded>
+      <UpdateAssemblyVersion>True</UpdateAssemblyVersion>
+      <UpdateAssemblyFileVersion>True</UpdateAssemblyFileVersion>
+      <UpdateAssemblyInfoVersion>False</UpdateAssemblyInfoVersion>
+      <AssemblyVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyVersionSettings>
+      <UpdatePackageVersion>False</UpdatePackageVersion>
+      <AssemblyInfoVersionType>SettingsVersion</AssemblyInfoVersionType>
+      <InheritWinAppVersionFrom>None</InheritWinAppVersionFrom>
+      <AssemblyFileVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyFileVersionSettings>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
       <ShouldCreateLogs>True</ShouldCreateLogs>
       <AdvancedSettingsExpanded>False</AdvancedSettingsExpanded>
       <UpdateAssemblyVersion>True</UpdateAssemblyVersion>

@@ -1,12 +1,10 @@
-﻿<Window x:Class="FindInFile.MainWindow"
+﻿<Window x:Class="FindInFiles.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
-        xmlns:vm="clr-namespace:FindInFile.ViewModel"
-        xmlns:findInFile="clr-namespace:FindInFile"
-        xmlns:classes="clr-namespace:FindInFile.Classes"
+        xmlns:classes="clr-namespace:FindInFiles.Classes"
         mc:Ignorable="d"
         Title="{Binding Title}" Height="450" Width="800" Closing="MainWindow_OnClosing">
     

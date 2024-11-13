@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 
-namespace FindInFile.Classes;
+namespace FindInFiles.Classes;
 
 /// <summary>
 /// 

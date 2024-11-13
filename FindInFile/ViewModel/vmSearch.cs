@@ -4,13 +4,12 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using FindInFile.Classes;
-using FindInFile.Model;
+using FindInFiles.Classes;
+using FindInFiles.Model;
 using Newtonsoft.Json;
 
-namespace FindInFile.ViewModel
+namespace FindInFiles.ViewModel
 {
    public class vmSearch : INotifyPropertyChanged 
    {
