@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
-using FindInFile.Classes;
+using FindInFiles.Classes;
 
-namespace FindInFile.Model;
+namespace FindInFiles.Model;
 
 public class modelSearch
 {

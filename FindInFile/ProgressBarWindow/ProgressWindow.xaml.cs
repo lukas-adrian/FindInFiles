@@ -1,7 +1,7 @@
 ﻿
 using System.Windows;
 
-namespace FindInFile.ProgressBarWindow;
+namespace FindInFiles.ProgressBarWindow;
 
 /// <summary>
 /// Waiting Bar

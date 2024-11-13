@@ -1,5 +1,5 @@
 ﻿
-namespace FindInFile;
+namespace FindInFiles;
 
 public class SearchHistory
 {

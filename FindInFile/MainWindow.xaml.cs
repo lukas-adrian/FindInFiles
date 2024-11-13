@@ -8,14 +8,12 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Media;
-using FindInFile.Classes;
-using FindInFile.ProgressBarWindow;
-using FindInFile.ViewModel;
+using FindInFiles.Classes;
+using FindInFiles.ProgressBarWindow;
+using FindInFiles.ViewModel;
 using ICSharpCode.AvalonEdit.Highlighting;
-using Newtonsoft.Json;
 
-namespace FindInFile
+namespace FindInFiles
 {
     public partial class MainWindow : Window
     {
