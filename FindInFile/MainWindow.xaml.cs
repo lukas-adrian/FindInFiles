@@ -181,6 +181,31 @@ namespace FindInFile
 
 
 
+        /// <summary>
+        /// Get the items from the a treeview node
+        /// </summary>
+        /// <param name="selectedItem"></param>
+        /// <returns></returns>
+        private Tuple<SearchResult, FoundItem?>? GetCurrentTreeViewItem(object selectedItem)
+        {
+            if (selectedItem is FoundItem foundItem)
+            {
+                // Find the parent SearchResult
+                foreach (SearchResult searchResult in (tvResult.ItemsSource as ObservableCollection<SearchResult>)!)
+                {
+                    if (searchResult.FoundItems.Contains(foundItem))
+                    {
+                        return new Tuple<SearchResult, FoundItem?>(searchResult, foundItem);
+                    }
+                }
+            }
+            else if (selectedItem is SearchResult searchResult)
+            {
+                return new Tuple<SearchResult, FoundItem?>(searchResult, null);
+            }
+
+            return null;
+        }
 
         #endregion private Functions
         
@@ -241,19 +266,10 @@ namespace FindInFile
                 SplitterColumn.Width = new GridLength(4);
                 PreviewColumn.Width = _gLengthPreviewWidth;
                 butPreview.Content = "<<<";
-                 
-                 if (tvResult.SelectedItem is FoundItem foundItem)
-                 {
-                     // Find the parent SearchResult
-                     foreach (var searchResult in tvResult.ItemsSource as ObservableCollection<SearchResult>)
-                     {
-                         if (searchResult.FoundItems.Contains(foundItem))
-                         {
-                             ShowCurrentFileInPrewView(searchResult, foundItem.LineNumber);
-                             break;
-                         }
-                     }
-                 }
+
+                Tuple<SearchResult, FoundItem?>? foundItems = GetCurrentTreeViewItem(tvResult.SelectedItem);
+                if(foundItems is { Item2: not null })
+                    ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
             }
             else
             {
@@ -280,24 +296,14 @@ namespace FindInFile
                 TextSearchRow.Height = new GridLength(TextSearchRow.Height.Value - _gLengthOptionsHeight.Value);
             }
         }
+
         
         
         private void TvResult_OnSelectedItemChanged(Object sender, RoutedPropertyChangedEventArgs<Object> e)
         {
-            FoundItem selectedItem = e.NewValue as FoundItem;
-
-            if (selectedItem is FoundItem foundItem)
-            {
-                // Find the parent SearchResult
-                foreach (var searchResult in (sender as TreeView).ItemsSource as ObservableCollection<SearchResult>)
-                {
-                    if (searchResult.FoundItems.Contains(foundItem))
-                    {
-                        ShowCurrentFileInPrewView(searchResult, selectedItem.LineNumber);
-                        break;
-                    }
-                }
-            }
+            Tuple<SearchResult, FoundItem?>? foundItems = GetCurrentTreeViewItem(e.NewValue);
+            if(foundItems is { Item2: not null })
+                ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
         }
 
         /// <summary>
@@ -433,7 +439,11 @@ namespace FindInFile
             butSearch.IsEnabled = true;
 
             vmSearch vm = DataContext as vmSearch;
-            tbStatusBar.Text = $"{vm.SearchResultList.Count} found";
+            
+            if(vm.SearchResultList.Count == 1)
+                tbStatusBar.Text = $"in {vm.SearchResultList.Count} file found";
+            else
+                tbStatusBar.Text = $"in {vm.SearchResultList.Count} files found";
 
         }
         
@@ -486,18 +496,38 @@ namespace FindInFile
         /// <param name="e"></param>
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
-            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            // if (sr == null)
-            //     return;
-            //
-            // if (File.Exists(sr.FilePath))
-            // {
-            //     Process.Start(sr.FilePath);
-            // }
-            // else
-            // {
-            //     MessageBox.Show("File not found.");
-            // }
+            Tuple<SearchResult, FoundItem?>? foundItems = GetCurrentTreeViewItem(tvResult.SelectedItem);
+           
+            if (foundItems != null && File.Exists(foundItems?.Item1.FilePath))
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(foundItems?.Item1.FilePath) { UseShellExecute = true });
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    if (ex.NativeErrorCode == 193)
+                    {
+                        MessageBox.Show("The file is not a valid executable. The system will try to open it with the associated application.");
+                        try
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", "/select," + foundItems?.Item1.FilePath) { UseShellExecute = true });
+                        }
+                        catch (Exception innerEx)
+                        {
+                            MessageBox.Show($"Error opening file {foundItems?.Item1.FilePath}: {innerEx.Message}");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Error opening file {foundItems?.Item1.FilePath}: {ex.Message}");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("File not found.");
+            }
         }
 
         /// <summary>
@@ -507,19 +537,17 @@ namespace FindInFile
         /// <param name="e"></param>
         private void ShowInExplorer_Click(object sender, RoutedEventArgs e)
         {
-            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            // if (sr == null)
-            //     return;
-            //
-            // if (File.Exists(sr.FilePath))
-            // {
-            //     string arguments = $"/select, \"{sr.FilePath}\"";
-            //     Process.Start("explorer.exe", arguments);
-            // }
-            // else
-            // {
-            //     MessageBox.Show("File not found.");
-            // }
+            Tuple<SearchResult, FoundItem?>? foundItems = GetCurrentTreeViewItem(tvResult.SelectedItem);
+            
+            if (File.Exists(foundItems?.Item1.FilePath))
+            {
+                string arguments = $"/select, \"{foundItems?.Item1.FilePath}\"";
+                Process.Start("explorer.exe", arguments);
+            }
+            else
+            {
+                MessageBox.Show("File not found.");
+            }
         }
         
         /// <summary>
