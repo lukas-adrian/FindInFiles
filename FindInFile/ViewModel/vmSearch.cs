@@ -152,6 +152,8 @@ namespace FindInFile.ViewModel
          get => _cancellationTokenSource;
          set => _cancellationTokenSource = value;
       }
+
+      public int FilesCountAll { get; private set; }
       
       #endregion Properties
       
@@ -208,7 +210,9 @@ namespace FindInFile.ViewModel
          
          try
          {
-            List<SearchResult> results = await Task.Run(() => SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, progress, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
+            int outFilesCountAll = 0;
+            List<SearchResult> results = await Task.Run(() => SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, progress, _cancellationTokenSource.Token, out outFilesCountAll), _cancellationTokenSource.Token);
+            FilesCountAll = outFilesCountAll;
             SearchResultList = new ObservableCollection<SearchResult>(results);
          }
          catch (OperationCanceledException)
@@ -339,7 +343,6 @@ namespace FindInFile.ViewModel
 
       #region SearchEngine
 
-      
       /// <summary>
       /// 
       /// </summary>
@@ -349,19 +352,21 @@ namespace FindInFile.ViewModel
       /// <param name="subDirs"></param>
       /// <param name="progress"></param>
       /// <param name="cancellationToken"></param>
+      /// <param name="totalFilesAllOut"></param>
       /// <returns></returns>
-      public List<SearchResult> SearchInFolder(string path, string extensions, string searchTerm, bool subDirs, IProgress<int> progress, CancellationToken cancellationToken)
+      private List<SearchResult> SearchInFolder(string path, string extensions, string searchTerm, bool subDirs, IProgress<int> progress, CancellationToken cancellationToken, out int totalFilesAllOut)
       {
          dicLineNumbers = new Dictionary<String, UInt64>();
          var foundResults = new List<SearchResult>();
          var extensionList = extensions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
             .Select(ext => ext.Trim()).ToList(); // Trim whitespace
 
+         totalFilesAllOut = 0;
          try
          {
             int totalFiles = 0;
             int processedFiles = 0;
-                
+ 
             foreach (var extension in extensionList)
             {
                IEnumerable<String> files = null;
@@ -372,6 +377,7 @@ namespace FindInFile.ViewModel
                   files = Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.TopDirectoryOnly);
 
                totalFiles += files.Count();
+               totalFilesAllOut += totalFiles;
                         
                foreach (var file in files)
                {

@@ -13,6 +13,12 @@
     <Window.Resources>
         <classes:ComboBoxMultiCmdConverter x:Key="ComboBoxMultiCmdConverter"/>
         
+        <!-- <ResourceDictionary x:Key=""> -->
+        <!--     <ResourceDictionary.MergedDictionaries> -->
+        <!--         <ResourceDictionary Source="ComboBoxResources.xaml"/> -->
+        <!--     </ResourceDictionary.MergedDictionaries> -->
+        <!-- </ResourceDictionary> -->
+        
         <ContextMenu x:Key="SearchListContextMenu">
             <MenuItem Header="Open File" Click="OpenFile_Click"/>
             <MenuItem Header="Show in Explorer" Click="ShowInExplorer_Click"/>
