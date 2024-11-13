@@ -22,7 +22,6 @@ namespace FindInFile
         private GridLength _gLengthPreviewWidth = new(400);
         private readonly GridLength _gLengthOptionsHeight = new(20);
 
-        private SearchHistory _SearchHistory;
         private ProgressWindow _pgWindow;
 
         private const UInt32 ONE_MB = 1048576;
@@ -34,8 +33,6 @@ namespace FindInFile
         public MainWindow()
         {
             InitializeComponent();
-            
-
             
             Assembly currentAssembly = Assembly.GetEntryAssembly();
             if (currentAssembly == null)
@@ -72,8 +69,6 @@ namespace FindInFile
             vm.ProgressChanged += Vm_ProgressChanged;
             vm.ProgressCompleted += Vm_ProgressCompleted;
         }
-
-
       
         #region private Functions
         
@@ -167,19 +162,6 @@ namespace FindInFile
             IHighlightingDefinition HighlightingDefinition = hlManager.GetDefinitionByExtension(extension);
             tbPreview.SyntaxHighlighting = HighlightingDefinition;
         }
-
-
-
-        // /// <summary>
-        // /// 
-        // /// </summary>
-        // /// <param name="results"></param>
-        // private void UpdateUIWithResults(List<SearchResult> results)
-        // {
-        //     dgResult.ItemsSource = results; // Bind results to DataGrid
-        // }
-
-
 
         /// <summary>
         /// Get the items from the a treeview node
@@ -296,100 +278,18 @@ namespace FindInFile
                 TextSearchRow.Height = new GridLength(TextSearchRow.Height.Value - _gLengthOptionsHeight.Value);
             }
         }
-
         
-        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void TvResult_OnSelectedItemChanged(Object sender, RoutedPropertyChangedEventArgs<Object> e)
         {
             Tuple<SearchResult, FoundItem?>? foundItems = GetCurrentTreeViewItem(e.NewValue);
             if(foundItems is { Item2: not null })
                 ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DataGridResults_OnSelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
-        {
-            // if (dgResult.SelectedItem == null)
-            //     return;
-            //
-            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            //
-            // if (sr != null)
-            // {
-            //     foreach (var cellInfo in e.AddedCells)
-            //     {
-            //         var cell = cellInfo.Column.GetCellContent(cellInfo.Item) as FrameworkElement;
-            //         if (cell != null)
-            //         {
-            //             var listBox = FindVisualChild<ListBox>(cell);
-            //             if (listBox != null && listBox.SelectedItem is int selectedLineNumber)
-            //             {
-            //                 ShowCurrentFileInPrewView(sr, selectedLineNumber);
-            //             }
-            //         }
-            //     }
-            // }
-        }
-
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DgSearchResultLineNumber_OnSelectionChanged(Object sender, SelectionChangedEventArgs e)
-        {
-            // var listBox = sender as ListBox;
-            // if (listBox?.SelectedItem == null) return;
-            //
-            // DataGridRow dataGridRow = FindVisualParentDataGridRow(listBox);
-            // dgResult.SelectedItem = dataGridRow.DataContext;
-            //
-            // SearchResult? sr = dgResult.SelectedItem as SearchResult;
-            // if (string.Compare(_sLastPreviewFile, sr.FilePath) == 0)
-            // {
-            //     int selectedLineNumber = (int)listBox.SelectedItem;
-            //     ShowCurrentFileInPrewView(sr, selectedLineNumber);
-            // }
-        }
-
-        
-        private DataGridRow FindVisualParentDataGridRow(DependencyObject child)
-        {
-            while (child != null)
-            {
-                if (child is DataGridRow row)
-                {
-                    return row;
-                }
-                child = VisualTreeHelper.GetParent(child);
-            }
-            return null;
-        }
-
-        // Helper method to find a child element of a given type
-        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T correctlyTyped)
-                {
-                    return correctlyTyped;
-                }
-                var childOfChild = FindVisualChild<T>(child);
-                if (childOfChild != null)
-                {
-                    return childOfChild;
-                }
-            }
-            return null;
-        }
-
         
         /// <summary>
         /// 
@@ -440,13 +340,12 @@ namespace FindInFile
 
             vmSearch vm = DataContext as vmSearch;
             
-            if(vm.SearchResultList.Count == 1)
-                tbStatusBar.Text = $"in {vm.SearchResultList.Count} file found";
+            if(vm.FilesCountAll == 1)
+                tbStatusBar.Text = $"in {vm.SearchResultList.Count} of {vm.FilesCountAll} file found";
             else
-                tbStatusBar.Text = $"in {vm.SearchResultList.Count} files found";
+                tbStatusBar.Text = $"in {vm.SearchResultList.Count} of {vm.FilesCountAll} files found";
 
         }
-        
 
         /// <summary>
         /// 
@@ -594,7 +493,6 @@ namespace FindInFile
                     vm.RemoveItemExt(objParameters[1].ToString());
             }
         }
-
 
         /// <summary>
         /// 
