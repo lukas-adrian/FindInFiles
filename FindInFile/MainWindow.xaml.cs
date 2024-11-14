@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using FindInFiles.Classes;
 using FindInFiles.ProgressBarWindow;
 using FindInFiles.ViewModel;
@@ -17,8 +18,7 @@ namespace FindInFiles
 {
     public partial class MainWindow : Window
     {
-        private GridLength _gLengthPreviewWidth = new(400);
-        private readonly GridLength _gLengthOptionsHeight = new(20);
+        private readonly GridLength _gLengthOptionsHeight = new(60);
 
         private ProgressWindow _pgWindow;
 
@@ -121,10 +121,10 @@ namespace FindInFiles
                 
                 if (vm.dicLineNumbers.TryGetValue(sFilePath, out UInt64 outByteLength))
                 {
-                    if (outByteLength > (ONE_MB * vm.MaxPreviewSize))
+                    if (outByteLength > (ONE_MB * vm.MaxPreviewFileSizeMB))
                     {
                         StringBuilder sbText = new StringBuilder();
-                        sbText.AppendLine($"File {Path.GetFileName(sFilePath)} is bigger than {vm.MaxPreviewSize} MB");
+                        sbText.AppendLine($"File {Path.GetFileName(sFilePath)} is bigger than {vm.MaxPreviewFileSizeMB} MB");
                         sbText.AppendLine($"Current File size is {((double)outByteLength / (double)ONE_MB).ToString("0.00", CultureInfo.CurrentUICulture)} MB");
                     
                         tbPreview.Text = sbText.ToString();
@@ -187,6 +187,25 @@ namespace FindInFiles
             return null;
         }
 
+               
+        private bool IsNumeric(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return false;
+
+            if (text.All(char.IsDigit))
+                return true;
+
+            if (text.Length == 1 && text == ".")
+                return true;
+
+            // Additional checks if needed, such as allowing only one decimal point
+            if (text.Contains(".") && text.Split('.').Length > 2)
+                return false;
+
+            return false;
+        }
+        
         #endregion private Functions
         
         #region Events
@@ -198,7 +217,9 @@ namespace FindInFiles
         /// <param name="e"></param>
         private void PreViewSplitter_OnDragCompleted(Object sender, DragCompletedEventArgs e)
         {
-            _gLengthPreviewWidth = PreviewColumn.Width;
+            vmSearch vm = DataContext as vmSearch;
+            
+            vm.MaxPreviewWidth = PreviewColumn.Width.Value;
         }
         
         /// <summary>
@@ -241,10 +262,12 @@ namespace FindInFiles
         /// <param name="e"></param>
         private void ButPreview_Click(Object sender, RoutedEventArgs e)
         {
+            vmSearch vm = DataContext as vmSearch;
+            
             if (PreviewColumn.Width.Value == 0)
             {
                 SplitterColumn.Width = new GridLength(4);
-                PreviewColumn.Width = _gLengthPreviewWidth;
+                PreviewColumn.Width = new GridLength(vm.MaxPreviewWidth);
                 butPreview.Content = "<<<";
 
                 Tuple<SearchResult, FoundItem?>? foundItems = GetCurrentTreeViewItem(tvResult.SelectedItem);
@@ -268,7 +291,7 @@ namespace FindInFiles
             if (OptionsRow.Height.Value == 0)
             {
                 OptionsRow.Height = _gLengthOptionsHeight;
-                TextSearchRow.Height = new GridLength(TextSearchRow.Height.Value + _gLengthOptionsHeight.Value);
+                TextSearchRow.Height = new GridLength(TextSearchRow.Height.Value + OptionsRow.Height.Value);
             }
             else
             {
@@ -370,16 +393,8 @@ namespace FindInFiles
             _pgWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             _pgWindow.Show();
             
-            // Execute command instead of BackgroundWorker
-            var args = new SearchArgs 
-            { 
-                Path = folderPath, 
-                Extensions = fileExtensions, 
-                SearchTerm = searchTerm, 
-                SubDirs = bSubDirs 
-            };
-        
-            (DataContext as vmSearch)?.SearchCommand.Execute(args);
+
+            (DataContext as vmSearch)?.SearchCommand.Execute(null);
         
             butSearch.IsEnabled = false;
         
@@ -502,7 +517,37 @@ namespace FindInFiles
             ExpandTree();
         } 
         
+        private void TbMinMax_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (!char.IsDigit(e.Text, 0) && e.Text != ".")
+            {
+                e.Handled = true;
+            }
+
+            if ((e.Text == ".") && ((sender as TextBox).Text.IndexOf('.') > -1))
+            {
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TbNumberic_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            string clipboardText = e.DataObject.GetData(typeof(string)) as string;
+            if (!IsNumeric(clipboardText))
+            {
+                e.CancelCommand(); // Prevent the paste operation
+            }
+        }
+        
         #endregion Events
+ 
+        
+
     }
 
 }

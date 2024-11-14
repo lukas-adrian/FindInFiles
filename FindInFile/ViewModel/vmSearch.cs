@@ -16,19 +16,6 @@ namespace FindInFiles.ViewModel
       
       #region Properties
 
-      public string Title
-      {
-         get { return _model.Title; }
-         set
-         {
-            if (_model.Title != value)
-            {
-               _model.Title = value;
-               OnPropertyChanged();
-            }
-         }
-      }
-
       public string SearchText
       {
          get { return _model.SearchText; }
@@ -81,7 +68,7 @@ namespace FindInFiles.ViewModel
          }
       }
       
-      public UInt32 MaxPreviewSize
+      public UInt32 MaxPreviewFileSizeMB
       {
          get { return _model.MaxPreViewSize; }
          set
@@ -146,11 +133,81 @@ namespace FindInFiles.ViewModel
          }
       }
       
-      public CancellationTokenSource CancellationTokenSource
+            
+      public Int32 SearchMinMB
       {
-         get => _cancellationTokenSource;
-         set => _cancellationTokenSource = value;
+         get { return _model.SearchMinMB; }
+         set
+         {
+            if (_model.SearchMinMB != value)
+            {
+               try
+               {
+                  checked
+                  {
+                     _model.SearchMinMB = value < 0 ? 0 : value;
+                  }
+               }
+               catch (OverflowException ex)
+               {
+                  // Handle the overflow exception here
+                  _model.SearchMinMB = 0;
+               }
+               OnPropertyChanged();
+            }
+         }
       }
+      
+      public Int32 SearchMaxMB
+      {
+         get { return _model.SearchMaxMB; }
+         set
+         {
+            try
+            {
+               checked
+               {
+                  _model.SearchMaxMB = value < 0 ? 0 : value;
+               }
+            }
+            catch (OverflowException ex)
+            {
+               // Handle the overflow exception here
+               _model.SearchMaxMB = 0;
+            }
+            OnPropertyChanged();
+         }
+      }
+      
+      public Int32 WindowHeight
+      {
+         get { return _model.WindowHeight; }
+         set
+         {
+            if (_model.WindowHeight != value)
+            {
+               _model.WindowHeight = value;
+               OnPropertyChanged();
+            }
+         }
+      }
+      
+      public Int32 WindowWidth
+      {
+         get { return _model.WindowWidth; }
+         set
+         {
+            if (_model.WindowWidth != value)
+            {
+               _model.WindowWidth = value;
+               OnPropertyChanged();
+            }
+         }
+      }
+
+      public string Title { get; set; }
+      public double MaxPreviewWidth { get; set; }
+      public CancellationTokenSource CancellationTokenSource { get; set; }
 
       public int FilesCountAll { get; private set; }
       
@@ -165,7 +222,6 @@ namespace FindInFiles.ViewModel
       private readonly string HistoryFilePath;
 
       public ICommand SearchCommand { get; private set; }
-      private CancellationTokenSource _cancellationTokenSource;
       public event PropertyChangedEventHandler PropertyChanged;
 
       /// <summary>
@@ -196,21 +252,30 @@ namespace FindInFiles.ViewModel
       /// <summary>
       /// 
       /// </summary>
-      /// <param name="parameter"></param>
-      public async void Execute(object parameter)
+      public async void Execute(object? parameter)
       {
+         var progress = new Progress<int>(percent => 
+         {
+            ProgressChanged?.Invoke(this, percent); // Update progress bar in ProgressWindow
+         });
 
-         if (parameter is not SearchArgs args) return;
-         
-          var progress = new Progress<int>(percent => 
-          {
-             ProgressChanged?.Invoke(this, percent); // Update progress bar in ProgressWindow
-          });
+         if (SearchMinMB > SearchMaxMB)
+          SearchMinMB = 0;
          
          try
          {
             int outFilesCountAll = 0;
-            List<SearchResult> results = await Task.Run(() => SearchInFolder(args.Path, args.Extensions, args.SearchTerm, args.SubDirs, progress, _cancellationTokenSource.Token, out outFilesCountAll), _cancellationTokenSource.Token);
+            List<SearchResult> results = await Task.Run(() => SearchInFolder(
+               Path,
+               Extension,
+               SearchText,
+               SubDirs,
+               SearchMinMB,
+               SearchMaxMB,
+               progress,
+               CancellationTokenSource.Token,
+               out outFilesCountAll), CancellationTokenSource.Token);
+            
             FilesCountAll = outFilesCountAll;
             SearchResultList = new ObservableCollection<SearchResult>(results);
          }
@@ -349,52 +414,77 @@ namespace FindInFiles.ViewModel
       /// <param name="extensions"></param>
       /// <param name="searchTerm"></param>
       /// <param name="subDirs"></param>
+      /// <param name="maxFileSizeMB"></param>
       /// <param name="progress"></param>
       /// <param name="cancellationToken"></param>
       /// <param name="totalFilesAllOut"></param>
+      /// <param name="minFileSizeMB"></param>
       /// <returns></returns>
-      private List<SearchResult> SearchInFolder(string path, string extensions, string searchTerm, bool subDirs, IProgress<int> progress, CancellationToken cancellationToken, out int totalFilesAllOut)
+      private List<SearchResult> SearchInFolder(
+         string path,
+         string extensions,
+         string searchTerm,
+         bool subDirs,
+         int minFileSizeMB,
+         int maxFileSizeMB,
+         IProgress<int> progress,
+         CancellationToken cancellationToken,
+         out int totalFilesAllOut)
       {
          dicLineNumbers = new Dictionary<String, UInt64>();
          var foundResults = new List<SearchResult>();
-         var extensionList = extensions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+         var lstExtensions = extensions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
             .Select(ext => ext.Trim()).ToList(); // Trim whitespace
 
          totalFilesAllOut = 0;
          try
          {
-            int totalFiles = 0;
+
             int processedFiles = 0;
- 
-            foreach (var extension in extensionList)
+            
+            List<String> lstAllFiles = new();
+            foreach (String extension in lstExtensions)
             {
-               IEnumerable<String> files = null;
-
                if (subDirs)
-                  files = Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.AllDirectories);
+                  lstAllFiles.AddRange(Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.AllDirectories).ToList());
                else
-                  files = Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.TopDirectoryOnly);
-
-               totalFiles += files.Count();
-               totalFilesAllOut += totalFiles;
-                        
-               foreach (var file in files)
-               {
-                  if (cancellationToken.IsCancellationRequested)
-                  {
-                     progress?.Report(0);
-                     throw new OperationCanceledException();
-                  }
-                  
-                  SearchResult? foundInFile = FileContainsTermUsingBytes(file, searchTerm);
-                  if(foundInFile != null)
-                     foundResults.Add(foundInFile);
-                  
-                  processedFiles++;
-                  int percentage = (int)((processedFiles / (float)totalFiles) * 100);
-                  progress?.Report(percentage);
-               }
+                  lstAllFiles.AddRange(Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.TopDirectoryOnly).ToList());
             }
+ 
+            foreach (String file in lstAllFiles)
+            {
+               
+               FileInfo fileInfo = new(file);
+
+               int FileSizeMB = Convert.ToInt32(fileInfo.Length / (1024.0 * 1024.0));
+               if (!(minFileSizeMB == 0 && maxFileSizeMB == 0) &&
+                   (FileSizeMB < minFileSizeMB || FileSizeMB > maxFileSizeMB))
+               {
+                  continue;
+               }
+               
+               totalFilesAllOut++;
+               
+               if (cancellationToken.IsCancellationRequested)
+               {
+                  progress?.Report(0);
+                  throw new OperationCanceledException();
+               }
+               
+               
+               SearchResult? foundInFile = FileContainsTermUsingBytes(file, searchTerm);
+               if (foundInFile != null)
+               {
+                  foundInFile.FileSizeBytes = Convert.ToUInt64(fileInfo.Length);
+                  foundInFile.FileSize = $"Size: {Convert.ToUInt64(fileInfo.Length / 1024.0)} (kB)";
+                  foundResults.Add(foundInFile);
+               }
+               
+               processedFiles++;
+               int percentage = (int)(processedFiles / (float)lstAllFiles.Count * 100);
+               progress?.Report(percentage);
+            }
+ 
          }
          catch (Exception ex)
          {
@@ -415,8 +505,7 @@ namespace FindInFiles.ViewModel
 
          try
          {
-            FileInfo fileInfo = new(filePath);
-            
+
             byte[] fileBytes = File.ReadAllBytes(filePath); // Read all bytes from the file
             string content = Encoding.UTF8.GetString(fileBytes); // Convert bytes to string
 
@@ -436,8 +525,6 @@ namespace FindInFiles.ViewModel
                         foundResults = new SearchResult
                         {
                            FilePath = filePath,
-                           FileSizeBytes = (Convert.ToUInt64(fileInfo.Length)),
-                           FileSize = $"Size: {Convert.ToUInt64(fileInfo.Length / 1024.0)} (kB)"
                         };
                      }
 
@@ -524,13 +611,26 @@ namespace FindInFiles.ViewModel
       {
          if (!File.Exists(SettingsFilePath))
          {//Default value
-            MaxPreviewSize = 5;
+            MaxPreviewFileSizeMB = 5;
+            SubDirs = false;
+            SearchMinMB = 0;
+            SearchMaxMB = 0;
+            MaxPreviewWidth = 400;
          }
          else
          {
+            
             string json = File.ReadAllText(SettingsFilePath);
-            var jsonObject = JsonConvert.DeserializeAnonymousType(json, new { MaxPreviewSize = 0 });
-            MaxPreviewSize = Convert.ToUInt32(jsonObject.MaxPreviewSize);
+            Settings settings = JsonConvert.DeserializeObject<Settings>(json);
+
+            MaxPreviewFileSizeMB = settings.MaxPreviewSize;
+            SubDirs = settings.SubDirs;
+            SearchMinMB = settings.SearchMinMB;
+            SearchMaxMB = settings.SearchMaxMB;
+            MaxPreviewWidth = settings.MaxPreviewWidth;
+            WindowHeight = settings.WindowHeight;
+            WindowWidth = settings.WindowWidth;
+
          }
       }
       
@@ -539,11 +639,18 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void SaveSettings()
       {
-         var jsonObject = new
+         Settings settings = new()
          {
-            MaxPreviewSize = MaxPreviewSize
+            MaxPreviewSize = MaxPreviewFileSizeMB,
+            SubDirs = SubDirs,
+            SearchMinMB = SearchMinMB,
+            SearchMaxMB = SearchMaxMB,
+            MaxPreviewWidth = MaxPreviewWidth,
+            WindowHeight = WindowHeight,
+            WindowWidth = WindowWidth,
          };
-         string json = JsonConvert.SerializeObject(jsonObject);
+
+         string json = JsonConvert.SerializeObject(settings);
          // Save the JSON to a file
          File.WriteAllText(SettingsFilePath, json);
       }
@@ -559,6 +666,26 @@ namespace FindInFiles.ViewModel
          SearchTexts.Clear();
             
          File.Delete(HistoryFilePath);
+      }
+      
+      public class Settings
+      {
+         public uint MaxPreviewSize { get; set; }
+         public bool SubDirs { get; set; }
+         public int SearchMinMB { get; set; }
+         public int SearchMaxMB { get; set; }
+         
+         [DefaultValue(400)]            
+         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+         public double MaxPreviewWidth { get; set; }
+         
+         [DefaultValue(600)]            
+         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+         public int WindowHeight { get; set; }
+         
+         [DefaultValue(600)]            
+         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+         public int WindowWidth { get; set; }
       }
       
       #endregion Save/Load user files

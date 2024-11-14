@@ -6,7 +6,12 @@
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:classes="clr-namespace:FindInFiles.Classes"
         mc:Ignorable="d"
-        Title="{Binding Title}" Height="450" Width="800" Closing="MainWindow_OnClosing">
+        Title="{Binding Title}"
+        Height="{Binding WindowHeight}"
+        MinHeight="250"
+        Width="{Binding WindowWidth}"
+        MinWidth="250"
+        Closing="MainWindow_OnClosing">
     
     <Window.Resources>
         <classes:ComboBoxMultiCmdConverter x:Key="ComboBoxMultiCmdConverter"/>
@@ -21,17 +26,14 @@
             <MenuItem Header="Open File" Click="OpenFile_Click"/>
             <MenuItem Header="Show in Explorer" Click="ShowInExplorer_Click"/>
         </ContextMenu>
-        <!-- -->
-        <!-- <Style TargetType="DataGridRow" x:Key="DataRowStyle"> -->
-        <!--     <Setter Property="ContextMenu" Value="{StaticResource SearchListContextMenu}"/> -->
-        <!-- </Style> -->
         
         <Style TargetType="Button" x:Key="ModernButton">
             <Setter Property="Background" Value="LightGray"/>
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -55,7 +57,7 @@
     
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/> <!-- Main content area -->
+            <ColumnDefinition Width="*" MinWidth="200"/> <!-- Main content area -->
             <ColumnDefinition Width="4" x:Name="SplitterColumn"/> <!--Splitter -->
             <ColumnDefinition Width="400" x:Name="PreviewColumn"/> <!-- Preview area, initially hidden -->
         </Grid.ColumnDefinitions>
@@ -64,7 +66,7 @@
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="35"></RowDefinition>
-                <RowDefinition Height="60" x:Name="TextSearchRow"></RowDefinition>
+                <RowDefinition Height="60" x:Name="TextSearchRow"/>
                 <RowDefinition Height="*"></RowDefinition>
                 <RowDefinition Height="20"></RowDefinition>
             </Grid.RowDefinitions>
@@ -158,7 +160,7 @@
             <Grid Grid.Row="1" Grid.ColumnSpan="3" Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="35"/>
-                    <RowDefinition Height="20" />
+                    <RowDefinition Height="25" />
                     <RowDefinition x:Name="OptionsRow" Height="0" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -217,11 +219,13 @@
                     Margin="5"
                     Click="ButPath_Click" />
                 
+                <!-- Subdirecotries/Expand Tree -->
                 <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
                     <CheckBox 
                         Content="Include Subdirectories"
                         ToolTip="Search also in the subdirectories"
                         HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
                         Margin="5,0,5,0"
                         Name="chbSubDirs"
                         IsChecked="{Binding SubDirs}"/>
@@ -232,31 +236,59 @@
                         Click="ButExpandTree_Click"
                         ToolTip="Expand whole result tree"
                         Content="Expand Tree"
-                        Margin="5,0,5,0"/>
+                        Margin="5,0,5,5"/>
                     
                 </StackPanel>
-                <!-- Subdirecotries -->
-
                 
-                <!-- Options -->
-                <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Left" FlowDirection="LeftToRight" Orientation="Horizontal">
-                    <!-- Clear History -->
-                    <Button 
-                        Style="{StaticResource ModernButton}"
-                        Content="Clear History"
-                        ToolTip="Clear History"
-                        Width="110"
-                        Margin="5,0,5,0" Click="ButDelHistory_Click" />
+                <!-- Search between/Clear history -->
+                <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="OldLace">
+                    <Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
                     
-                    <!-- set max preview size -->
-                    <TextBox 
-                        ToolTip="Set the max size to show a preview of a file (0 shows all files)"
-                        Width="30"
-                        Margin="5,0,5,0"
-                        Text="{Binding MaxPreviewSize, UpdateSourceTrigger=PropertyChanged}"/>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5,5,0,5" HorizontalAlignment="Left" FlowDirection="LeftToRight">
+                        <Label Content="Search between" Margin="0" Padding="0" VerticalAlignment="Center"/>
+                        <TextBox 
+                            ToolTip="Set the min size for files"
+                            Width="30"
+                            Margin="5,0,5,0"
+                            Text="{Binding SearchMinMB, UpdateSourceTrigger=PropertyChanged}"
+                            PreviewTextInput="TbMinMax_PreviewTextInput"
+                            DataObject.Pasting="TbNumberic_Pasting"/>
+                        <Label Content="MB and " Margin="0" Padding="0"  VerticalAlignment="Center"/>
+                        
+                        <TextBox 
+                            ToolTip="Set the max size for files (0 searches in all files)"
+                            Width="30"
+                            Margin="5,0,5,0"
+                            Text="{Binding SearchMaxMB, UpdateSourceTrigger=PropertyChanged}"
+                            PreviewTextInput="TbMinMax_PreviewTextInput"
+                            DataObject.Pasting="TbNumberic_Pasting"/>
+                        <Label Content="min MB" Margin="0" Padding="0" VerticalAlignment="Center"/>
+                        
+                    </StackPanel>
                     
-                    <Label Content="MB" Margin="0" Padding="0"></Label>
-                </StackPanel>
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Left" FlowDirection="LeftToRight" Orientation="Horizontal"  Margin="5,5,0,5">
+                        <!-- Clear History -->
+                        <Button 
+                            Style="{StaticResource ModernButton}"
+                            Content="Clear History"
+                            ToolTip="Clear History"
+                            Width="110"
+                            Margin="5,0,5,0" Click="ButDelHistory_Click" />
+                    
+                        <!-- set max preview size -->
+                        <Label Content="Show in PreView in MB max" Margin="0" Padding="0"  VerticalAlignment="Center"/>
+                        <TextBox 
+                            ToolTip="Set the max size to show a preview of a file (0 shows all files)"
+                            Width="30"
+                            Margin="5,0,5,0"
+                            Text="{Binding MaxPreviewFileSizeMB, UpdateSourceTrigger=PropertyChanged}"
+                            DataObject.Pasting="TbNumberic_Pasting"/>
+           
+                    </StackPanel>
+                </Grid>
                 
                 <!-- Search Button -->
                 <Button
@@ -276,7 +308,7 @@
                     Style="{StaticResource ModernButton}"
                     Width="25"
                     ToolTip="Settings"
-                    Margin="5,0,5,0"
+                    Margin="5,0,5,5"
                     Click="ButOptions_Click">
                     <Image Source="icons/settings.ico"/>
                 </Button>
@@ -290,7 +322,7 @@
                     Click="ButPreview_Click"
                     ToolTip="Open/Close the Preview for the current file"
                     Content=">>>"
-                    Margin="5,0,5,0"/>
+                    Margin="5,0,5,5"/>
             </Grid>
             
             <TreeView 
@@ -348,8 +380,9 @@
         </Grid>
 
         <!-- Splitter -->
-        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="gsSplitter"
-                       ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Background="Gray" DragCompleted="PreViewSplitter_OnDragCompleted"/>
+        <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                       ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Background="Gray"
+                       DragCompleted="PreViewSplitter_OnDragCompleted"/>
 
         <!-- Preview Area -->
         <Grid Grid.Column="2">

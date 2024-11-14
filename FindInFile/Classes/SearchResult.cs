@@ -21,14 +21,3 @@ public class FoundItem
    public string Result { get; set; }
    public bool IsSelected { get; set; }
 }
-
-/// <summary>
-/// Arguments to search some files
-/// </summary>
-public class SearchArgs
-{
-   public string Path { get; set; }
-   public string Extensions { get; set; }
-   public string SearchTerm { get; set; }
-   public bool SubDirs { get; set; }
-}

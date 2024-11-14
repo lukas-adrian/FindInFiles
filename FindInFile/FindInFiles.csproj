@@ -8,8 +8,8 @@
         <UseWPF>true</UseWPF>
         <Company>AdiSoft</Company>
         <ApplicationIcon>icons\main.ico</ApplicationIcon>
-        <AssemblyVersion>2024.11.13.5</AssemblyVersion>
-        <FileVersion>2024.11.13.5</FileVersion>
+        <AssemblyVersion>2024.11.14.1</AssemblyVersion>
+        <FileVersion>2024.11.14.1</FileVersion>
         <StartupObject>FindInFiles.App</StartupObject>
         <Title>FindInFiles</Title>
         <PackageIcon>main128x128.png</PackageIcon>
