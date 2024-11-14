@@ -357,7 +357,7 @@ namespace FindInFiles
         private void Vm_ProgressCompleted(object sender, EventArgs e)
         {
             _pgWindow.Close(); // Close ProgressWindow on completion
-            butSearch.IsEnabled = true;
+            gSearch.IsEnabled = true;
 
             vmSearch vm = DataContext as vmSearch;
             
@@ -396,7 +396,7 @@ namespace FindInFiles
 
             (DataContext as vmSearch)?.SearchCommand.Execute(null);
         
-            butSearch.IsEnabled = false;
+            gSearch.IsEnabled = false;
         
             vm.AddItemsSearchHistory(cbSearchText.Text, cbSearchPath.Text, cbSearchExt.Text);
         }
@@ -460,6 +460,17 @@ namespace FindInFiles
             {
                 MessageBox.Show("File not found.");
             }
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ClearSearchResults_Click(Object sender, RoutedEventArgs e)
+        {
+            vmSearch vm = DataContext as vmSearch;
+            vm.SearchResultList.Clear();
         }
         
         /// <summary>
@@ -545,8 +556,6 @@ namespace FindInFiles
         }
         
         #endregion Events
- 
-        
 
     }
 

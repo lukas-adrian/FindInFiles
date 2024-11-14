@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using FindInFiles.Classes;
+using FindInFiles.Extensions;
 using FindInFiles.Model;
 using Newtonsoft.Json;
 
@@ -316,17 +317,20 @@ namespace FindInFiles.ViewModel
       {
          if (!string.IsNullOrEmpty(text))
          {
-            SearchHistory.Text.Add(text);
+            SearchHistory.Text.Remove(text);
+            SearchHistory.Text.Insert(0, text);
             SearchTexts = new ObservableCollection<String>(SearchHistory.Text);
          }
          if (!string.IsNullOrEmpty(extension))
          {
-            SearchHistory.Extension.Add(extension);
+            SearchHistory.Extension.Remove(extension);
+            SearchHistory.Extension.Insert(0, extension);
             SearchExtensions = new ObservableCollection<String>(SearchHistory.Extension);
          }
          if (!string.IsNullOrEmpty(path))
          {
-            SearchHistory.Path.Add(path);
+            SearchHistory.Path.Remove(path);
+            SearchHistory.Path.Insert(0, path);
             SearchPaths = new ObservableCollection<String>(SearchHistory.Path);
          }
          SaveHistory();
@@ -588,18 +592,9 @@ namespace FindInFiles.ViewModel
             if (SearchHistory != null)
             {
 
-               foreach (string sPath in SearchHistory.Path)
-               {
-                  SearchPaths.Add(sPath);
-               }
-               foreach (string sExt in SearchHistory.Extension)
-               {
-                  SearchExtensions.Add(sExt);
-               }
-               foreach (string sText in SearchHistory.Text)
-               {
-                  SearchTexts.Add(sText);
-               }
+               SearchPaths.AddRange(SearchHistory.Path.Distinct().ToList());
+               SearchExtensions.AddRange(SearchHistory.Extension.Distinct().ToList());
+               SearchTexts.AddRange(SearchHistory.Text.Distinct().ToList());
             }
          }
       }
