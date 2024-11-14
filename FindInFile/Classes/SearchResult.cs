@@ -13,6 +13,7 @@ public class SearchResult
    public string Count { get; set; }
    public ObservableCollection<FoundItem> FoundItems { get; set; } = new();
    public bool IsSelected { get; set; }
+   public bool AreFoundItemsLoaded { get; set; } = false;
 }
 
 public class FoundItem
