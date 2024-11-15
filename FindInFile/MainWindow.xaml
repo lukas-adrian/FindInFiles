@@ -19,8 +19,11 @@
         <ContextMenu x:Key="SearchListContextMenu">
             <MenuItem Header="Open File" Click="OpenFile_Click"/>
             <MenuItem Header="Show in Explorer" Click="ShowInExplorer_Click"/>
+            <Separator />
             <MenuItem Header="Clear Search Results" Click="ClearSearchResults_Click"/>
-        </ContextMenu>
+            <Separator />
+            <MenuItem Header="Expand Tree" Click="CtrlExpandTree_Click"/>
+         </ContextMenu>
         
         <Style TargetType="Button" x:Key="ModernButton">
             <Setter Property="Background" Value="LightGray"/>
@@ -222,13 +225,11 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Margin="5,0,5,0"
-                        Name="chbSubDirs"
                         IsChecked="{Binding SubDirs}"/>
                 
                     <Button 
                         Style="{StaticResource ModernButton}"
-                        Name="butExpandTree"
-                        Click="ButExpandTree_Click"
+                        Click="CtrlExpandTree_Click"
                         ToolTip="Expand whole result tree"
                         Content="Expand Tree"
                         Margin="5,0,5,5"/>
@@ -290,7 +291,6 @@
                     Grid.Row="0"
                     Grid.Column="2" 
                     Style="{StaticResource ModernButton}"
-                    Name="butSearch"
                     Click="ButSearch_Click"
                     Width="60"
                     Content="Search"
@@ -319,8 +319,72 @@
                     Content=">>>"
                     Margin="5,0,5,5"/>
             </Grid>
-                
-            <TreeView 
+
+
+    
+            <!--<Grid Grid.Row="2" Grid.ColumnSpan="3" Grid.Column="0">
+            
+                <DataGrid x:Name="DG_myStudents" 
+                          EnableRowVirtualization="False"
+                          EnableColumnVirtualization="False"
+                          IsReadOnly="True"
+                          RowDetailsVisibilityMode="Collapsed" 
+                          AutoGenerateColumns="False" 
+                          RowDetailsVisibilityChanged="DG_myStudents_RowDetailsVisibilityChanged" 
+                          ItemsSource="{Binding SearchResultList}"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                          
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserSortColumns="True"
+                          CanUserResizeColumns="True"
+                          GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="Auto">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Expander Width="50" 
+                                              Expanded="Expander_Expanded" 
+                                              Collapsed="Expander_Collapsed" 
+                                              IsExpanded="False" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="FilePath" Binding="{Binding FilePath}" CanUserResize="False" Width="Auto"/>
+                        <DataGridTextColumn Header="FileSize" Binding="{Binding FileSize}" CanUserResize="False" Width="Auto"/>
+                        <DataGridTextColumn Header="Count" Binding="{Binding Count}" CanUserResize="False" Width="Auto"/>
+                    </DataGrid.Columns>
+                    <DataGrid.RowDetailsTemplate>
+                        <DataTemplate>
+                            <DataGrid x:Name="DG_myMarks"
+                                      IsReadOnly="True"
+                                      Margin="15,8,8,8"
+                                      Width="Auto"
+                                      EnableRowVirtualization="False"
+                                      EnableColumnVirtualization="False"
+                                      AutoGenerateColumns="False"
+                                      HorizontalAlignment="Left"
+                                      HeadersVisibility="None"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserSortColumns="True"
+                                      CanUserResizeColumns="True"
+                                      BorderBrush="Transparent"
+                                      BorderThickness="0"
+                                      GridLinesVisibility="None">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="LineNumber" Binding="{Binding LineNumber}" Width="Auto"/>
+                                    <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="Auto"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DataTemplate>
+                    </DataGrid.RowDetailsTemplate>
+                </DataGrid>
+            
+            </Grid>-->
+
+
+         <TreeView 
                 Grid.Row="2"
                 Grid.ColumnSpan="3"
                 Grid.Column="0"
@@ -329,41 +393,44 @@
                 Name="tvResult"
                 ItemsSource="{Binding SearchResultList}"
                 SelectedItemChanged="TvResult_OnSelectedItemChanged">
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                        <Setter Property="ContextMenu" Value="{StaticResource SearchListContextMenu}"/>
-                    </Style>
-                </TreeView.ItemContainerStyle>
-                <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type classes:SearchResult}" ItemsSource="{Binding FoundItems}">
+            <TreeView.ItemContainerStyle>
+               <Style TargetType="TreeViewItem">
+                  <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                  <Setter Property="ContextMenu" Value="{StaticResource SearchListContextMenu}"/>
+               </Style>
+            </TreeView.ItemContainerStyle>
+            <TreeView.Resources>
+               <HierarchicalDataTemplate DataType="{x:Type classes:SearchResult}" ItemsSource="{Binding FoundItems}">
+                  <Grid>
+                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="100" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Text="{Binding FilePath}" TextWrapping="NoWrap" Grid.Column="0" />
+                     <TextBlock Text="{Binding FileSize}" Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                     <TextBlock Text="{Binding Count}" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                  </Grid>
+                  <HierarchicalDataTemplate.ItemTemplate>
+                     <DataTemplate DataType="{x:Type classes:FoundItem}">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="100" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding FilePath}" TextWrapping="NoWrap" Grid.Column="0" />
-                            <TextBlock Text="{Binding FileSize}" Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0" />
-                            <TextBlock Text="{Binding Count}" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                           <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="50" />
+                              <ColumnDefinition Width="*" />
+                           </Grid.ColumnDefinitions>
+                           <TextBlock Text="{Binding LineNumber}" Grid.Column="0" />
+                           <TextBlock Text="{Binding Result}" Grid.Column="1"  TextWrapping="NoWrap" HorizontalAlignment="Left" Margin="10,0,0,0" />
                         </Grid>
-                        <HierarchicalDataTemplate.ItemTemplate>
-                            <DataTemplate DataType="{x:Type classes:FoundItem}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="50" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{Binding LineNumber}" Grid.Column="0" />
-                                    <TextBlock Text="{Binding Result}" Grid.Column="1"  TextWrapping="NoWrap" HorizontalAlignment="Left" Margin="10,0,0,0" />
-                                </Grid>
-                            </DataTemplate>
-                        </HierarchicalDataTemplate.ItemTemplate>
-                    </HierarchicalDataTemplate>
-                </TreeView.Resources>
-            </TreeView>
-  
-            <StatusBar Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="3">
+                     </DataTemplate>
+                  </HierarchicalDataTemplate.ItemTemplate>
+               </HierarchicalDataTemplate>
+            </TreeView.Resources>
+         </TreeView>
+
+
+
+
+         <StatusBar Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="3">
                 <StatusBarItem>
                     <TextBlock Name="tbStatusBar" Text="" />
                 </StatusBarItem>

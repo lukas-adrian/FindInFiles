@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
-        Title="Progress" Height="150" Width="300">
+        Title="Progress" Height="150" Width="300" ResizeMode="NoResize">
     <Grid>
         <StackPanel Margin="20">
             <ProgressBar x:Name="progressBar" Minimum="0" Maximum="100" Height="20" />

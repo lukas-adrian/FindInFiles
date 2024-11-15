@@ -11,9 +11,9 @@ public class SearchResult
    public UInt64 FileSizeBytes { get; set; }
    public string FileSize { get; set; }
    public string Count { get; set; }
-   public ObservableCollection<FoundItem> FoundItems { get; set; } = new();
    public bool IsSelected { get; set; }
-   public bool AreFoundItemsLoaded { get; set; } = false;
+
+   public ObservableCollection<FoundItem> FoundItems { get; set; } = new();
 }
 
 public class FoundItem
