@@ -4,16 +4,16 @@ A small and fast tool to find a search term in text files. Created with Rider/Vi
 
 ![main.png](images/mainwindow.png)
 
-To avoid for example to open big files in the preview window or search just for a limited range of files I added some settings:\
+To avoid for example to open big files in the preview window or search just for a limited range of files I added some settings: \
 
 ![settings.png](images/settings.png)
 
 ### Extensions
 
-Type Extensions like txt, xm*, etc.\
+Type Extensions like txt, xm*, etc. \
 I don't use extension like *.txt, just txt because I don't see any use of it. If there is an use to search for files like *test.txt or something like that I will think about it. But I never experienced it
 
-This is how the PlugIn is reading the files:\
+This is how the PlugIn is reading the files: \
 `Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.AllDirectories)`
 
 ## Download
