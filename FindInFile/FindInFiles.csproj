@@ -8,8 +8,8 @@
         <UseWPF>true</UseWPF>
         <Company>AdiSoft</Company>
         <ApplicationIcon>icons\main.ico</ApplicationIcon>
-        <AssemblyVersion>2024.11.15.8</AssemblyVersion>
-        <FileVersion>2024.11.15.8</FileVersion>
+        <AssemblyVersion>2024.11.20.12</AssemblyVersion>
+        <FileVersion>2024.11.20.12</FileVersion>
         <StartupObject>FindInFiles.App</StartupObject>
         <Title>FindInFiles</Title>
         <PackageIcon>main128x128.png</PackageIcon>
@@ -22,11 +22,11 @@
       <UpdateAssemblyVersion>True</UpdateAssemblyVersion>
       <UpdateAssemblyFileVersion>True</UpdateAssemblyFileVersion>
       <UpdateAssemblyInfoVersion>False</UpdateAssemblyInfoVersion>
-      <AssemblyVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyVersionSettings>
+      <AssemblyVersionSettings>YearStamp.MonthStamp.DayStamp.None</AssemblyVersionSettings>
       <UpdatePackageVersion>False</UpdatePackageVersion>
       <AssemblyInfoVersionType>SettingsVersion</AssemblyInfoVersionType>
       <InheritWinAppVersionFrom>None</InheritWinAppVersionFrom>
-      <AssemblyFileVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyFileVersionSettings>
+      <AssemblyFileVersionSettings>YearStamp.MonthStamp.DayStamp.None</AssemblyFileVersionSettings>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -51,8 +51,9 @@
       <AssemblyVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyVersionSettings>
       <UpdatePackageVersion>False</UpdatePackageVersion>
       <AssemblyInfoVersionType>SettingsVersion</AssemblyInfoVersionType>
-      <InheritWinAppVersionFrom>None</InheritWinAppVersionFrom>
+      <InheritWinAppVersionFrom>AssemblyVersion</InheritWinAppVersionFrom>
       <AssemblyFileVersionSettings>YearStamp.MonthStamp.DayStamp.IncrementWithResetOnIncrease</AssemblyFileVersionSettings>
+      <PackageVersionSettings>AssemblyVersion.IncrementWithAutoReset.None</PackageVersionSettings>
     </PropertyGroup>
 
     <ItemGroup>
@@ -61,6 +62,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\ICSharpCode.AvalonEdit\ICSharpCode.AvalonEdit.csproj" />
+      <ProjectReference Include="..\PlugInBase\PlugInBase.csproj" />
     </ItemGroup>
 
     <ItemGroup>
