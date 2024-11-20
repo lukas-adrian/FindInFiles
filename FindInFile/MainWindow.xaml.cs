@@ -234,6 +234,7 @@ namespace FindInFiles
          else
          {
             PreviewColumn.Width = new GridLength(0); // Hide panel
+            SplitterColumn.Width = new GridLength(0);
             butPreview.Content = ">>>";
          }
       }
@@ -324,58 +325,6 @@ namespace FindInFiles
             tbStatusBar.Text = $"in {vm.SearchResultList.Count} of {vm.FilesCountAll} files found";
 
       }
-
-      //private bool bTest = false;
-      //private void Expander_Expanded(object sender, RoutedEventArgs e)
-      //{
-      //    bTest = true;
-      //    DataGridRow row = FindVisualParent<DataGridRow>(sender as Expander);  
-      //    row.DetailsVisibility = System.Windows.Visibility.Visible;
-      //    bTest = false;
-
-      //}  
-
-      //private void Expander_Collapsed(object sender, RoutedEventArgs e)  
-      //{  
-      //    DataGridRow row = FindVisualParent<DataGridRow>(sender as Expander);  
-      //    row.DetailsVisibility = System.Windows.Visibility.Collapsed;  
-      //}  
-
-      //public T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
-      //{
-
-      //    DependencyObject parentObject = VisualTreeHelper.GetParent(child);  
-      //    if (parentObject == null) return null;  
-      //    T parent = parentObject as T;  
-      //    if (parent != null)  
-      //        return parent;  
-      //    else  
-      //        return FindVisualParent<T>(parentObject);  
-      //}  
-
-
-
-
-      //private void DG_myStudents_RowDetailsVisibilityChanged(object sender, DataGridRowDetailsEventArgs e)  
-      //{  
-
-      //    //DataGrid MainDataGrid = sender as DataGrid;  
-
-      //    SearchResult sr = (e.Row.DataContext as SearchResult);  
-      //    if (sr == null)  
-      //    {  
-      //        return;  
-      //    }
-
-      //    DataGrid DetailsDataGrid = e.DetailsElement as DataGrid;  
-      //    if (DetailsDataGrid.ItemsSource == null)
-      //    {
-      //        DetailsDataGrid.ItemsSource = sr.FoundItems;  
-      //    }
-
-
-
-      //}  
 
       /// <summary>
       /// 
