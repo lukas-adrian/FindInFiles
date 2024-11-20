@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -14,6 +13,7 @@ using FindInFiles.Extensions;
 using FindInFiles.ProgressBarWindow;
 using FindInFiles.ViewModel;
 using ICSharpCode.AvalonEdit.Highlighting;
+using PlugInBase;
 
 namespace FindInFiles
 {

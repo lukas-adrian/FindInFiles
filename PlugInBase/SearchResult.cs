@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace FindInFiles.Classes;
+namespace PlugInBase;
 
 /// <summary>
 /// Item in the SearchRestulList in the GataGrid

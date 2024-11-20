@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:classes="clr-namespace:FindInFiles.Classes"
+        xmlns:plugInBase="clr-namespace:PlugInBase;assembly=PlugInBase"
         mc:Ignorable="d"
         Title="{Binding Title}"
         Height="{Binding WindowHeight}"
@@ -282,8 +283,17 @@
                             Margin="5,0,5,0"
                             Text="{Binding MaxPreviewFileSizeMB, UpdateSourceTrigger=PropertyChanged}"
                             DataObject.Pasting="TbNumberic_Pasting"/>
-           
-                    </StackPanel>
+
+                  <!-- set max preview size -->
+                        <Label Content="Max item in Hitory" Margin="0" Padding="0"  VerticalAlignment="Center"/>
+                        <TextBox 
+                           ToolTip="Set the max items in the history (0 = nothing will be saved)"
+                           Width="30"
+                           Margin="5,0,5,0"
+                           Text="{Binding MaxHistoryItems, UpdateSourceTrigger=PropertyChanged}"
+                           DataObject.Pasting="TbNumberic_Pasting"/>
+
+               </StackPanel>
                 </Grid>
                 
                 <!-- Search Button -->
@@ -400,7 +410,7 @@
                </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.Resources>
-               <HierarchicalDataTemplate DataType="{x:Type classes:SearchResult}" ItemsSource="{Binding FoundItems}">
+               <HierarchicalDataTemplate DataType="{x:Type plugInBase:SearchResult}" ItemsSource="{Binding FoundItems}">
                   <Grid>
                      <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -412,7 +422,7 @@
                      <TextBlock Text="{Binding Count}" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" />
                   </Grid>
                   <HierarchicalDataTemplate.ItemTemplate>
-                     <DataTemplate DataType="{x:Type classes:FoundItem}">
+                     <DataTemplate DataType="{x:Type plugInBase:FoundItem}">
                         <Grid>
                            <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="50" />
