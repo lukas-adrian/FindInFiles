@@ -28,6 +28,8 @@ I am using AvalonEdit for my preview window, https://github.com/icsharpcode/Aval
 
 ## PlugIns Example
 
+See: [FindInFiles.PlugIns](https://github.com/lukas-adrian/FindInFiles.PlugIns)
+
 To create some plugin just reference PlugInBase and inherit from ISearchInFolderPlugIn.
 You can use my plugIn SearchInTextFilesKMP as a template
 
