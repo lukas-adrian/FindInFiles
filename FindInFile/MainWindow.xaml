@@ -234,6 +234,22 @@
                         ToolTip="Expand whole result tree"
                         Content="Expand Tree"
                         Margin="5,0,5,5"/>
+                        
+                        <CheckBox
+                        Content="Whole word"
+                        ToolTip="Match only entire words (e.g., 'cat' won’t match 'catalog')"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Margin="5,0,5,0"
+                        IsChecked="{Binding WholeWord}"/>
+                        
+                    <CheckBox
+                        Content="Match case"
+                        ToolTip="Match exact letter case (e.g., 'Cat' ≠ 'cat')"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Margin="5,0,5,0"
+                        IsChecked="{Binding MatchCase}"/>
                     
                 </StackPanel>
                 
@@ -284,7 +300,7 @@
                             Text="{Binding MaxPreviewFileSizeMB, UpdateSourceTrigger=PropertyChanged}"
                             DataObject.Pasting="TbNumberic_Pasting"/>
 
-                  <!-- set max preview size -->
+                        <!-- set max preview size -->
                         <Label Content="Max item in Hitory" Margin="0" Padding="0"  VerticalAlignment="Center"/>
                         <TextBox 
                            ToolTip="Set the max items in the history (0 = nothing will be saved)"
@@ -410,7 +426,7 @@
                </Style>
             </TreeView.ItemContainerStyle>
             <TreeView.Resources>
-               <HierarchicalDataTemplate DataType="{x:Type plugInBase:SearchResult}" ItemsSource="{Binding FoundItems}">
+               <HierarchicalDataTemplate DataType="{x:Type plugInBase:SearchResultFile}" ItemsSource="{Binding FoundItems}">
                   <Grid>
                      <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

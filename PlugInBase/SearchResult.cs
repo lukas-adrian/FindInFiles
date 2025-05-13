@@ -5,7 +5,7 @@ namespace PlugInBase;
 /// <summary>
 /// Item in the SearchRestulList in the GataGrid
 /// </summary>
-public class SearchResult
+public class SearchResultFile
 {
    public string FilePath { get; set; }
    public UInt64 FileSizeBytes { get; set; }
@@ -19,6 +19,12 @@ public class SearchResult
 public class FoundItem
 {
    public int LineNumber { get; set; }
+   public int? Page { get; set; }
    public string Result { get; set; }
    public bool IsSelected { get; set; }
+   
+   public string Sheet { get; set; }
+   public string Column { get; set; }
+   public int Row { get; set; }
+   
 }

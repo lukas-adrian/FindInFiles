@@ -102,7 +102,7 @@ namespace FindInFiles
       /// <summary>
       /// 
       /// </summary>
-      private void ShowCurrentFileInPrewView(SearchResult searchResult, int LineNumberSelectIn = 0)
+      private void ShowCurrentFileInPrewView(SearchResultFile searchResult, int LineNumberSelectIn = 0)
       {
          if (PreviewColumn.Width.Value == 0)
             return;
@@ -227,7 +227,7 @@ namespace FindInFiles
             PreviewColumn.Width = new GridLength(vm.MaxPreviewWidth);
             butPreview.Content = "<<<";
 
-            Tuple<SearchResult, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
+            Tuple<SearchResultFile, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
             if (foundItems is { Item2: not null })
                ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
          }
@@ -265,7 +265,7 @@ namespace FindInFiles
       /// <param name="e"></param>
       private void TvResult_OnSelectedItemChanged(Object sender, RoutedPropertyChangedEventArgs<Object> e)
       {
-         Tuple<SearchResult, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(sender as TreeView, e.NewValue);
+         Tuple<SearchResultFile, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(sender as TreeView, e.NewValue);
          if (foundItems is { Item2: not null })
             ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
       }
@@ -369,7 +369,7 @@ namespace FindInFiles
       /// <param name="e"></param>
       private void OpenFile_Click(object sender, RoutedEventArgs e)
       {
-         Tuple<SearchResult, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
+         Tuple<SearchResultFile, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
 
          if (foundItems != null && File.Exists(foundItems?.Item1.FilePath))
          {
@@ -410,7 +410,7 @@ namespace FindInFiles
       /// <param name="e"></param>
       private void ShowInExplorer_Click(object sender, RoutedEventArgs e)
       {
-         Tuple<SearchResult, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
+         Tuple<SearchResultFile, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
 
          if (File.Exists(foundItems?.Item1.FilePath))
          {

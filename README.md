@@ -21,7 +21,7 @@ This is how the PlugIn is reading the files:
 
 Just download the zip file and extract it somewhere. There is no setup file.
 
-Download (latest version): [FindInFiles-2024.11.20.13.zip](https://github.com/lukas-adrian/FindInFiles/blob/master/FindInFiles-2024.11.20.13.zip)
+Download (latest version): [FindInFiles-2024.11.20.13.zip](https://github.com/lukas-adrian/FindInFiles/blob/master/FindInFiles-2025.05.14.06.zip)
 
 ## AvalonEdit as PreviewWindow
 

@@ -72,6 +72,31 @@ namespace FindInFiles.ViewModel
          }
       }
       
+      public bool WholeWord
+      {
+         get { return _model.WholeWord; }
+         set
+         {
+            if (_model.WholeWord != value)
+            {
+               _model.WholeWord = value;
+               OnPropertyChanged();
+            }
+         }
+      }
+      
+      public bool MatchCase
+      {
+         get { return _model.MatchCase; }
+         set
+         {
+            if (_model.MatchCase != value)
+            {
+               _model.MatchCase = value;
+               OnPropertyChanged();
+            }
+         }
+      }
       public UInt32 MaxPreviewFileSizeMB
       {
          get { return _model.MaxPreViewSize; }
@@ -124,7 +149,7 @@ namespace FindInFiles.ViewModel
          }
       }
       
-      public ObservableCollection<PlugInBase.SearchResult> SearchResultList
+      public ObservableCollection<PlugInBase.SearchResultFile> SearchResultList
       {
          get { return _model.SearchResultList; }
          set
@@ -265,11 +290,13 @@ namespace FindInFiles.ViewModel
          dicExtensionPlugIns = new Dictionary<String, List<ISearchInFolderPlugIn>?>();
 
          string sPlugInFolder = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "PlugIns");
-         List <ISearchInFolderPlugIn> lstPlugIns = PluginLoader.LoadPlugins(sPlugInFolder);
+         List<ISearchInFolderPlugIn> lstPlugIns = PluginLoader.LoadPlugins(sPlugInFolder);
          foreach (ISearchInFolderPlugIn plugIn in lstPlugIns)
          {
             List<string> lstExt = plugIn.GetExtensions();
             plugIn.FileSearchCompleted += PlugInOnFileSearchCompleted;
+            plugIn.DebugOutput += PlugInOnDebugOutput;
+
 
             if (lstExt.Count == 0)
             {
@@ -301,19 +328,25 @@ namespace FindInFiles.ViewModel
       }
 
       //private Stopwatch stopwatch = new Stopwatch();
-      private ConcurrentBag<PlugInBase.SearchResult> SearchResultListTmp;
+      private ConcurrentBag<PlugInBase.SearchResultFile> SearchResultListTmp;
       private readonly object _lock = new object();
 
+
+      private void PlugInOnDebugOutput(Object? sender, String e)
+      {
+
+      }
+      
       private void PlugInOnFileSearchCompleted(Object? sender, FileSearchEventArgs e)
       {
          lock (_lock)
          {
             if (e.EventStatus == FileSearchEventArgs.Status.Completed)
             {
-               List<PlugInBase.SearchResult> results = e.ResultList;
+               List<PlugInBase.SearchResultFile> results = e.ResultList;
                FilesCountAll += e.totalFilesAllOut.Value;
 
-               foreach (PlugInBase.SearchResult result in results)
+               foreach (PlugInBase.SearchResultFile result in results)
                {
                   SearchResultListTmp.Add(result);
                }
@@ -351,8 +384,8 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public async void Execute(object? parameter)
       {
-         SearchResultListTmp = new ConcurrentBag<SearchResult>();
-         SearchResultList = new ObservableCollection<SearchResult>();
+         SearchResultListTmp = new ConcurrentBag<SearchResultFile>();
+         SearchResultList = new ObservableCollection<SearchResultFile>();
          FilesCountAll = 0;
 
          var progress = new Progress<int>(percent => 
@@ -386,18 +419,30 @@ namespace FindInFiles.ViewModel
                {
                   throw new NotImplementedException($"no PlugIn loaeded | 20241120-112231");
                }
+               
+               List<String> lstAllFiles = new();
+               if (SubDirs)
+                  lstAllFiles.AddRange(Directory.EnumerateFiles(Path, $"{sExtension}", SearchOption.AllDirectories).ToList());
+               else
+                  lstAllFiles.AddRange(Directory.EnumerateFiles(Path, $"{sExtension}", SearchOption.TopDirectoryOnly).ToList());
+
+               List<string> lstFilesChecked = new List<String>();
+               foreach (String sFile in lstAllFiles)
+               {
+                  FileInfo fi = new FileInfo(sFile);
+                  if(ValidateFileSize(fi, SearchMinMB, SearchMaxMB))
+                     lstFilesChecked.Add(sFile);
+               }
 
                if (lstPlugInNoExt != null)
                {
                   foreach (ISearchInFolderPlugIn plugIn in lstPlugInNoExt)
                   {
                      tasks.Add(Task.Run(() => plugIn.SearchInFolder(
-                        Path,
-                        sExtension,
+                        lstFilesChecked,
                         SearchText,
-                        SubDirs,
-                        SearchMinMB,
-                        SearchMaxMB,
+                        MatchCase,
+                        WholeWord,
                         progress,
                         CancellationTokenSource.Token), CancellationTokenSource.Token));
                   }
@@ -408,7 +453,7 @@ namespace FindInFiles.ViewModel
 
 
 
-            foreach (SearchResult result in SearchResultListTmp)
+            foreach (SearchResultFile result in SearchResultListTmp)
             {
                SearchResultList.Add(result);
             }
@@ -426,6 +471,25 @@ namespace FindInFiles.ViewModel
          {
             ProgressCompleted?.Invoke(this, EventArgs.Empty);
          }
+      }
+      
+      private bool ValidateFileSize(
+         FileInfo fileInfo,
+         Int32 minFileSizeMBIn = 0,
+         Int32 maxFileSizeMBIn = 0)
+      {
+         if (minFileSizeMBIn == 0 && maxFileSizeMBIn == 0)
+            return true;
+
+         int fileSizeMB = Convert.ToInt32(fileInfo.Length / (1024.0 * 1024.0));
+
+         if (!(minFileSizeMBIn == 0 && maxFileSizeMBIn == 0) &&
+             (fileSizeMB < minFileSizeMBIn || fileSizeMB > maxFileSizeMBIn))
+         {
+            return false;
+         }
+
+         return true;
       }
       
       /// <summary>
@@ -554,154 +618,6 @@ namespace FindInFiles.ViewModel
          }
       }
       #endregion Add/Remove Search Items
-
-      #region SearchEngine
-
-      /// <summary>
-      /// 
-      /// </summary>
-      /// <param name="path"></param>
-      /// <param name="extensions"></param>
-      /// <param name="searchTerm"></param>
-      /// <param name="subDirs"></param>
-      /// <param name="maxFileSizeMB"></param>
-      /// <param name="progress"></param>
-      /// <param name="cancellationToken"></param>
-      /// <param name="totalFilesAllOut"></param>
-      /// <param name="minFileSizeMB"></param>
-      /// <returns></returns>
-      private List<SearchResult> SearchInFolder(
-         string path,
-         string extensions,
-         string searchTerm,
-         bool subDirs,
-         int minFileSizeMB,
-         int maxFileSizeMB,
-         IProgress<int> progress,
-         CancellationToken cancellationToken,
-         out int totalFilesAllOut)
-      {
-         dicLineNumbers = new Dictionary<String, UInt64>();
-         var foundResults = new List<SearchResult>();
-         var lstExtensions = extensions.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(ext => ext.Trim()).ToList(); // Trim whitespace
-
-         totalFilesAllOut = 0;
-         try
-         {
-
-            int processedFiles = 0;
-            
-            List<String> lstAllFiles = new();
-            foreach (String extension in lstExtensions)
-            {
-               if (subDirs)
-                  lstAllFiles.AddRange(Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.AllDirectories).ToList());
-               else
-                  lstAllFiles.AddRange(Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.TopDirectoryOnly).ToList());
-            }
- 
-            foreach (String file in lstAllFiles)
-            {
-               
-               FileInfo fileInfo = new(file);
-
-               int FileSizeMB = Convert.ToInt32(fileInfo.Length / (1024.0 * 1024.0));
-               if (!(minFileSizeMB == 0 && maxFileSizeMB == 0) &&
-                   (FileSizeMB < minFileSizeMB || FileSizeMB > maxFileSizeMB))
-               {
-                  continue;
-               }
-               
-               totalFilesAllOut++;
-               
-               if (cancellationToken.IsCancellationRequested)
-               {
-                  progress?.Report(0);
-                  throw new OperationCanceledException();
-               }
-               
-               
-               SearchResult? foundInFile = FileContainsTermUsingBytes(file, searchTerm);
-               if (foundInFile != null)
-               {
-                  foundInFile.FileSizeBytes = Convert.ToUInt64(fileInfo.Length);
-                  foundInFile.FileSize = $"Size: {Convert.ToUInt64(fileInfo.Length / 1024.0)} (kB)";
-                  foundResults.Add(foundInFile);
-               }
-               
-               processedFiles++;
-               int percentage = (int)(processedFiles / (float)lstAllFiles.Count * 100);
-               progress?.Report(percentage);
-            }
- 
-         }
-         catch (Exception ex)
-         {
-            MessageBox.Show($"Error searching in folder: {ex.Message}");
-         }
-
-         return foundResults;
-      }
-      
-      /// <summary>
-      /// 
-      /// </summary>
-      /// <param name="filePath"></param>
-      /// <param name="searchTerm"></param>
-      private SearchResult? FileContainsTermUsingBytes(string filePath, string searchTerm)
-      {
-         SearchResult? foundResults = null;
-
-         try
-         {
-
-            byte[] fileBytes = File.ReadAllBytes(filePath); // Read all bytes from the file
-            string content = Encoding.UTF8.GetString(fileBytes); // Convert bytes to string
-
-            
-            int lineNumber = 0;
-            using (StringReader reader = new(content))
-            {
-               string line;
-               while ((line = reader.ReadLine()) != null)
-               {
-                  lineNumber++;
-                  int nFoundIndex = line.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase);
-                  if (nFoundIndex >= 0)
-                  {
-                     if (foundResults == null)
-                     {
-                        foundResults = new SearchResult
-                        {
-                           FilePath = filePath,
-                        };
-                     }
-
-                     FoundItem item = new FoundItem();
-                     item.LineNumber = lineNumber;
-                     item.Result = line.Trim();
-                     
-                     foundResults.FoundItems.Add(item);
-                  }
-
-                  if(foundResults != null)
-                     foundResults.Count = $"Count: {Convert.ToUInt32(foundResults.FoundItems.Count)}";
-               }
-
-               if (!dicLineNumbers.ContainsKey(filePath))
-                  dicLineNumbers.Add(filePath, (UInt64)fileBytes.Length);
-            }
-         }
-         catch (Exception ex)
-         {
-            MessageBox.Show($"Error reading file {filePath}: {ex.Message}");
-         }
-
-         return foundResults;
-      }
-      
-      #endregion SearchEngine
       
       #region Save/Load/Delete user files
       
@@ -754,6 +670,8 @@ namespace FindInFiles.ViewModel
          {//Default value
             MaxPreviewFileSizeMB = 5;
             SubDirs = false;
+            WholeWord = false;
+            MatchCase = false;
             SearchMinMB = 0;
             SearchMaxMB = 0;
             MaxPreviewWidth = 400;
@@ -770,6 +688,8 @@ namespace FindInFiles.ViewModel
 
             MaxPreviewFileSizeMB = settings.MaxPreviewSize;
             SubDirs = settings.SubDirs;
+            WholeWord = settings.WholeWord;
+            MatchCase = settings.MatchCase;
             SearchMinMB = settings.SearchMinMB;
             SearchMaxMB = settings.SearchMaxMB;
             MaxPreviewWidth = settings.MaxPreviewWidth;
@@ -797,6 +717,8 @@ namespace FindInFiles.ViewModel
          {
             MaxPreviewSize = MaxPreviewFileSizeMB,
             SubDirs = SubDirs,
+            WholeWord = WholeWord,
+            MatchCase = MatchCase,
             SearchMinMB = SearchMinMB,
             SearchMaxMB = SearchMaxMB,
             MaxPreviewWidth = MaxPreviewWidth,
@@ -830,6 +752,8 @@ namespace FindInFiles.ViewModel
       {
          public uint MaxPreviewSize { get; set; }
          public bool SubDirs { get; set; }
+         public bool WholeWord { get; set; }
+         public bool MatchCase { get; set; }
          public int SearchMinMB { get; set; }
          public int SearchMaxMB { get; set; }
          public string SearchText { get; set; }

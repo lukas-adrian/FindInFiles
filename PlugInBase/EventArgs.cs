@@ -17,7 +17,7 @@ namespace PlugInBase
       }
 
       public Status EventStatus { get; private set; }
-      public List<SearchResult>? ResultList { get; set; }
+      public List<SearchResultFile>? ResultList { get; set; }
       public Dictionary<String, UInt64>? dicLineNumbers { get; set; }
       public Int32? totalFilesAllOut { get; set; }
       public string? Value { get; private set; }
@@ -25,11 +25,11 @@ namespace PlugInBase
 
       public FileSearchEventArgs(
          Status eventStatus,
-         List<SearchResult>? resultList = null,
+         List<SearchResultFile>? resultList = null,
          Dictionary<String, UInt64>? dicLineNumbers = null,
          Int32? totalFilesAllOut = null,
          string? value = null
-         )
+      )
       {
          EventStatus = eventStatus;
          ResultList = resultList;

@@ -25,6 +25,29 @@ namespace FindInFiles.Classes.PlugInLoader
                   bool bCheckNextPlugIn = false;
                   foreach (Type type in types)
                   {
+                     /*Console.WriteLine(type.FullName);  // Log the type of 'type' being checked
+                     Console.WriteLine(typeof(PlugInBase.ISearchInFolderPlugIn).FullName);  // Log the FullName of the interface
+                     
+                     var baseType = type.BaseType;
+                     Console.WriteLine($"Base type: {baseType?.FullName}");
+
+                     var interfaces = type.GetInterfaces();
+                     foreach (var iface in interfaces)
+                     {
+                        Console.WriteLine($"Implemented interface: {iface.FullName}");
+                     }
+                     
+                     var methods = type.GetMethods();
+                     foreach (var method in methods)
+                     {
+                        Console.WriteLine($"Method: {method.Name}, Return Type: {method.ReturnType}, Parameters: {method.GetParameters().Length}");
+                     }
+                     
+                     foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                     {
+                        Console.WriteLine($"Loaded assembly: {assembly.FullName}");
+                     }*/
+                     
                      if (typeof(ISearchInFolderPlugIn).IsAssignableFrom(type))
                      {
                         ISearchInFolderPlugIn plugin = Activator.CreateInstance(type) as ISearchInFolderPlugIn;
