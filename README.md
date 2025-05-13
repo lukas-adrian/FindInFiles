@@ -34,22 +34,19 @@ See: [FindInFiles.PlugIns](https://github.com/lukas-adrian/FindInFiles.PlugIns)
 To create some plugin just reference PlugInBase and inherit from ISearchInFolderPlugIn.
 You can use my plugIn SearchInTextFilesKMP as a template
 
-      public async Task<List<FileSearchEventArgs>> SearchInFolder(
-         String path,
-         String extension,
+      public Task<List<FileSearchEventArgs>> SearchInFolder(
+         List<String> lstAllFiles,
          String searchTerm,
-         Boolean subDirs,
-         Int32 minFileSizeMB,
-         Int32 maxFileSizeMB,
+         bool matchCase,
+         bool wholeWord,
          IProgress<Int32> progress,
-         CancellationToken cancellationToken)
+         CancellationToken cancellationToken);
 
 * path, is the folder path where you will search for the files
 * extension, extension of the files. Just one extension because in the application is a loop for multiple extensions
 * searchTerm, some text
-* subDirs, ture if search also in subdirs
-* minFileSizeMB, it can be 0 if every file will be allowed. Idea was to limit the results
-* maxFileSizeMB, it can be 0 if every file will be allowed. If that value is 0 minFileSizeMB will be also 0
+* searchTerm, some search term
+* matchCase, match case only
 * progress, is for the waiting bar
 * cancellationToken, for cancelling
 
