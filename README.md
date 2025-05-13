@@ -9,14 +9,6 @@ To avoid for example to open big files in the preview window or search just for 
 
 ![settings.png](images/settings.png)
 
-### Extensions
-
-Type Extensions like txt, xm*, etc.
-I don't use extension like *.txt, just txt because I don't see any use of it. If there is an use to search for files like *test.txt or something like that I will think about it. But I never experienced it
-
-This is how the PlugIn is reading the files:
-`Directory.EnumerateFiles(path, $"*.{extension}", SearchOption.AllDirectories)`
-
 ## Download
 
 Just download the zip file and extract it somewhere. There is no setup file.
