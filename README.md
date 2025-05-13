@@ -1,4 +1,4 @@
-﻿# About the Project
+# About the Project
 
 A small and fast tool to find a search term in text files. Created with Rider/Visual Studio and .NET 8
 
@@ -55,7 +55,7 @@ You can use my plugIn SearchInTextFilesKMP as a template
 
 ## Ideas/ToDo's
 
-* (todo) add more PlugIns like PDF, Office Documents, etc
+* ~~(todo) add more PlugIns like PDF, Office Documents, etc~~
 * (idea) export of the results (csv, txt, clipboard, etc. no ideas yet)
 * (idea) treeview, add some columns for filesize and amount of results
 * (idea) ~~Tabs~~ (I don't like that idea anymore)
