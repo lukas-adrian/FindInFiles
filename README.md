@@ -1,6 +1,6 @@
 # About the Project
 
-A small and fast tool to find a search term in text files. Created with Rider/Visual Studio and .NET 8
+A small and fast tool to find a search term in text, pdf or Microsoft Office files. Created with Rider/Visual Studio and .NET 8
 
 ![main.png](images/mainwindow.png)
 
