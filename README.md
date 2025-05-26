@@ -13,11 +13,11 @@ To avoid for example to open big files in the preview window or search just for 
 
 Just download the zip file and extract it somewhere. There is no setup file.
 
-Download (latest version): [FindInFiles-2024.11.20.13.zip](https://github.com/lukas-adrian/FindInFiles/blob/master/FindInFiles-2025.05.14.06.zip)
+Download (latest version): [FindInFiles-2025.05.26.12.zip](https://github.com/lukas-adrian/FindInFiles/blob/master/FindInFiles-2025.05.26.12.zip)
 
-## AvalonEdit as PreviewWindow
+## Additional libraries
 
-I am using AvalonEdit for my preview window, https://github.com/icsharpcode/AvalonEdit
+All libraries links are listed in the plugin folders in the README
 
 ## PlugIns Example
 
@@ -49,10 +49,10 @@ You can use my plugIn SearchInTextFilesKMP as a template
 * (idea) treeview, add some columns for filesize and amount of results
 * (idea) ~~Tabs~~ (I don't like that idea anymore)
 * (todo) change the design like files in a different color, dark theme, etc
-* (todo) add optional page number and not only row number for PDFs
+* ~~(todo) add optional page number and not only row number for PDFs~~
 * (todo) expand the tree is too slow if there are a lot of nodes
 * (todo) searching in multiple folder
-* (todo) PlugIns including PreViewWindow like TextFiles + TextPreViewWindow, PDF + PDF PreViewWindow
+* ~~(todo) PlugIns including PreViewWindow like TextFiles + TextPreViewWindow, PDF + PDF PreViewWindow~~
 
 ## License
 

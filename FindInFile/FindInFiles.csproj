@@ -8,13 +8,13 @@
         <UseWPF>true</UseWPF>
         <Company>AdiSoft</Company>
         <ApplicationIcon>icons\main.ico</ApplicationIcon>
-        <AssemblyVersion>2025.05.14.06</AssemblyVersion>
-        <FileVersion>2025.05.14.06</FileVersion>
+        <AssemblyVersion>2025.05.26.12</AssemblyVersion>
+        <FileVersion>2025.05.26.12</FileVersion>
         <StartupObject>FindInFiles.App</StartupObject>
         <Title>FindInFiles</Title>
         <PackageIcon>main128x128.png</PackageIcon>
         <Platforms>AnyCPU;x64</Platforms>
-        <Version>2025.05.14.06</Version>
+        <Version>2025.05.26.12</Version>
         <RepositoryUrl>https://github.com/lukas-adrian/FindInFiles</RepositoryUrl>
     </PropertyGroup>
 
@@ -60,10 +60,11 @@
 
     <ItemGroup>
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+      <PackageReference Include="Serilog" Version="4.3.0" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ICSharpCode.AvalonEdit\ICSharpCode.AvalonEdit.csproj" />
       <ProjectReference Include="..\PlugInBase\PlugInBase.csproj" />
     </ItemGroup>
 
@@ -86,5 +87,9 @@
     <ItemGroup>
       <Reference Include="System.ObjectModel" />
     </ItemGroup>
+    
+    <Target Name="PostBuildCopyAll" AfterTargets="Build">
+     <Exec Command="copybuild.bat $(Configuration)" />
+   </Target>
 
 </Project>

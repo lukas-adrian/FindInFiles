@@ -16,15 +16,19 @@ public class SearchResultFile
    public ObservableCollection<FoundItem> FoundItems { get; set; } = new();
 }
 
+/// <summary>
+/// An item of the the SearchResultFile
+/// </summary>
 public class FoundItem
 {
-   public int LineNumber { get; set; }
+   public int? LineNumber { get; set; }
    public int? Page { get; set; }
    public string Result { get; set; }
    public bool IsSelected { get; set; }
    
+   public int? ParagraphNumber { get; set; }
    public string Sheet { get; set; }
    public string Column { get; set; }
-   public int Row { get; set; }
+   public int? Row { get; set; }
    
 }

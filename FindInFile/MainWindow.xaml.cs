@@ -12,15 +12,15 @@ using FindInFiles.Classes;
 using FindInFiles.Extensions;
 using FindInFiles.ProgressBarWindow;
 using FindInFiles.ViewModel;
-using ICSharpCode.AvalonEdit.Highlighting;
 using PlugInBase;
+using Serilog;
 
 namespace FindInFiles
 {
    public partial class MainWindow : Window
    {
+      private static readonly ILogger Log = Serilog.Log.ForContext<MainWindow>();
       private readonly GridLength _gLengthOptionsHeight = new(60);
-
       private ProgressWindow _pgWindow;
 
       private const UInt32 ONE_MB = 1048576;
@@ -32,7 +32,7 @@ namespace FindInFiles
       public MainWindow()
       {
          InitializeComponent();
-
+         
          Assembly currentAssembly = Assembly.GetEntryAssembly();
          if (currentAssembly == null)
          {
@@ -44,6 +44,8 @@ namespace FindInFiles
 
          object[] productAttributes = currentAssembly.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
          string sProductName = ((AssemblyProductAttribute)productAttributes[0]).Product;
+
+         Log.Information("Loading application JSON settings");
 
          string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
          string sHistoryFilePath = Path.Combine(appDataPath, sCompanyName, sProductName, "searchHistory.json");
@@ -77,6 +79,8 @@ namespace FindInFiles
       /// </summary>
       private void ExpandTree()
       {
+         Log.Information("ExpandTree");
+         
          // Disable processing of the Dispatcher queue to improve performance
          using (Dispatcher.DisableProcessing())
          {
@@ -102,8 +106,12 @@ namespace FindInFiles
       /// <summary>
       /// 
       /// </summary>
-      private void ShowCurrentFileInPrewView(SearchResultFile searchResult, int LineNumberSelectIn = 0)
+      private void ShowCurrentFileInPrewView(SearchResultFile searchResult, int? Page, int? LineNumberSelectIn)
       {
+         Log.Information("ExpandTree");
+#if DEBUG
+         Log.Debug("PreviewColumn.Width.Value = {Width}", PreviewColumn.Width.Value);
+#endif         
          if (PreviewColumn.Width.Value == 0)
             return;
 
@@ -112,13 +120,12 @@ namespace FindInFiles
          vmSearch vm = DataContext as vmSearch;
 
          string sFilePath = searchResult.FilePath;
-
+#if DEBUG
+         Log.Debug("sFilePath = {sFilePath}", sFilePath);
+#endif
          if (string.Compare(_sLastPreviewFile, sFilePath, StringComparison.OrdinalIgnoreCase) != 0)
          {
             _sLastPreviewFile = sFilePath;
-
-            tbPreview.IsReadOnly = true;
-            tbPreview.ShowLineNumbers = true;
 
             if (vm.dicLineNumbers.TryGetValue(sFilePath, out UInt64 outByteLength))
             {
@@ -128,38 +135,66 @@ namespace FindInFiles
                   sbText.AppendLine($"File {Path.GetFileName(sFilePath)} is bigger than {vm.MaxPreviewFileSizeMB} MB");
                   sbText.AppendLine($"Current File size is {((double)outByteLength / (double)ONE_MB).ToString("0.00", CultureInfo.CurrentUICulture)} MB");
 
-                  tbPreview.Text = sbText.ToString();
+                  Log.Information("File size is too big");
                   return;
                }
             }
-
-            tbPreview.Load(sFilePath);
-
          }
-
-         if (LineNumberSelectIn != 0)
+         
+         IPreviewPlugIn previewPlugin = null;
+         if (vm._dicPrewviewPlugin.TryGetValue(Path.GetExtension(sFilePath).ToUpper(), out previewPlugin))
          {
-            tbPreview.ScrollToLine(LineNumberSelectIn);
-            tbPreview.Select(LineNumberSelectIn, 15);
+#if DEBUG
+            Log.Debug("Plugin '{name}' found for = {ext}", previewPlugin.Name, Path.GetExtension(sFilePath).ToUpper());
+#endif
+            Log.Information("Preview Plugin found");
+         }
+         else
+         {//no preview maybe
 
-            //Select the line
-            int offset = tbPreview.Document.GetOffset(LineNumberSelectIn, 0); // Get the offset of the start of the line
-            var line = tbPreview.Document.GetLineByNumber(LineNumberSelectIn); // Get the length of the line
-            int lineLength = 0;
-            if (line != null)
+            if (Classes.Helper.IsTextFile(sFilePath))
             {
-               lineLength = line.Length;
+#if DEBUG
+               Log.Debug("File '{name}' was recognized as some textfile", Path.GetFileName(sFilePath).ToUpper());
+#endif
+               if (vm._dicPrewviewPlugin.TryGetValue("", out previewPlugin))
+               {
+                  Log.Information("get the default Preview Plugin");
+               }
+            }
+            else
+            {
+               TextBlock noPreviewText = new TextBlock
+               {
+                  Text = "No Preview Available", // More descriptive text
+                  HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                  VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                  FontSize = 18, // Make it bigger
+                  FontWeight = System.Windows.FontWeights.SemiBold, // Make it bolder
+                  Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray), // Softer color
+                  TextWrapping = System.Windows.TextWrapping.Wrap, // Allow text to wrap if the space is small
+                  TextAlignment = System.Windows.TextAlignment.Center // Center text within the TextBlock
+               };
+
+               PreviewHost.Content = noPreviewText;
+               return;
             }
 
-            tbPreview.SelectionStart = offset;
-            tbPreview.SelectionLength = lineLength;
+
          }
-
-
-         HighlightingManager? hlManager = HighlightingManager.Instance;
-         string extension = System.IO.Path.GetExtension(sFilePath);
-         IHighlightingDefinition HighlightingDefinition = hlManager.GetDefinitionByExtension(extension);
-         tbPreview.SyntaxHighlighting = HighlightingDefinition;
+         
+         ParameterHelper param = new()
+         {
+            LineNumber = LineNumberSelectIn,
+            PageNumber = Page
+         };
+         
+         Log.Information("set plugin to control");
+         Control previewControl = previewPlugin.GetPreviewControl(sFilePath);
+         PreviewHost.Content = previewControl;
+         
+         Log.Information("scroll and select text");
+         previewPlugin.GoTo(param);
       }
 
 
@@ -175,7 +210,6 @@ namespace FindInFiles
       private void PreViewSplitter_OnDragCompleted(Object sender, DragCompletedEventArgs e)
       {
          vmSearch vm = DataContext as vmSearch;
-
          vm.MaxPreviewWidth = PreviewColumn.Width.Value;
       }
 
@@ -229,7 +263,10 @@ namespace FindInFiles
 
             Tuple<SearchResultFile, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(tvResult, tvResult.SelectedItem);
             if (foundItems is { Item2: not null })
-               ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
+               ShowCurrentFileInPrewView(
+                  foundItems.Item1,
+                  Page: foundItems.Item2.Page,
+                  LineNumberSelectIn: foundItems.Item2.LineNumber);
          }
          else
          {
@@ -267,7 +304,10 @@ namespace FindInFiles
       {
          Tuple<SearchResultFile, FoundItem?>? foundItems = Helper.GetCurrentTreeViewItem(sender as TreeView, e.NewValue);
          if (foundItems is { Item2: not null })
-            ShowCurrentFileInPrewView(foundItems.Item1, foundItems.Item2.LineNumber);
+            ShowCurrentFileInPrewView(
+               foundItems.Item1,
+               Page: foundItems.Item2.Page,
+               LineNumberSelectIn: foundItems.Item2.LineNumber);
       }
 
       /// <summary>
@@ -314,6 +354,7 @@ namespace FindInFiles
       /// <param name="e"></param>
       private void Vm_ProgressCompleted(object sender, EventArgs e)
       {
+         Log.Information("search is complete");
          _pgWindow.Close(); // Close ProgressWindow on completion
          gSearch.IsEnabled = true;
 
@@ -333,20 +374,28 @@ namespace FindInFiles
       /// <param name="e"></param>
       private void ButSearch_Click(object sender, RoutedEventArgs e)
       {
-
+         Log.Information("Start to search");
          vmSearch vm = DataContext as vmSearch;
 
-         //vm.LoadData(); // Load data into SearchResultList
-         //vm.GroupResults(); // Group the results after loading
          string folderPath = cbSearchPath.Text; // Get folder path from ComboBox
-         if (!Directory.Exists(folderPath)) return;
+         if (!Directory.Exists(folderPath))
+         {
+#if DEBUG
+            Log.Debug("Folder {folderPath} doens't exists", folderPath);
+#endif
+            MessageBox.Show("Folder does not exists", "SearchInFiles", MessageBoxButton.OK, MessageBoxImage.Stop, MessageBoxResult.OK);
+            return;
+         }
 
          string searchTerm = cbSearchText.Text; // Get search term from ComboBox
-         if (string.IsNullOrEmpty(searchTerm)) return;
-
-         //string fileExtensions = cbSearchExt.Text; // Get file extension from ComboBox
-
-         //bool bSubDirs = chbSubDirs.IsChecked!.Value;
+         if (string.IsNullOrEmpty(searchTerm))
+         {
+#if DEBUG
+            Log.Debug("Search term is empty");
+#endif
+            MessageBox.Show("Search term is empty", "SearchInFiles", MessageBoxButton.OK, MessageBoxImage.Stop, MessageBoxResult.OK);
+            return;
+         }
 
          vm.CancellationTokenSource = new CancellationTokenSource();
          _pgWindow = new ProgressWindow(vm.CancellationTokenSource);
@@ -489,6 +538,11 @@ namespace FindInFiles
          ExpandTree();
       }
 
+      /// <summary>
+      /// 
+      /// </summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
       private void TbMinMax_PreviewTextInput(object sender, TextCompositionEventArgs e)
       {
          if (!char.IsDigit(e.Text, 0) && e.Text != ".")

@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:classes="clr-namespace:FindInFiles.Classes"
         xmlns:plugInBase="clr-namespace:PlugInBase;assembly=PlugInBase"
         mc:Ignorable="d"
@@ -15,6 +14,7 @@
         Closing="MainWindow_OnClosing">
     
     <Window.Resources>
+
         <classes:ComboBoxMultiCmdConverter x:Key="ComboBoxMultiCmdConverter"/>
         
         <ContextMenu x:Key="SearchListContextMenu">
@@ -292,7 +292,7 @@
                             Margin="5,0,5,0" Click="ButDelHistory_Click" />
                     
                         <!-- set max preview size -->
-                        <Label Content="Show in PreView in MB max" Margin="0" Padding="0"  VerticalAlignment="Center"/>
+                        <Label Content="Show file in preview just until MB max" Margin="0" Padding="0"  VerticalAlignment="Center"/>
                         <TextBox 
                             ToolTip="Set the max size to show a preview of a file (0 shows all files)"
                             Width="30"
@@ -301,7 +301,7 @@
                             DataObject.Pasting="TbNumberic_Pasting"/>
 
                         <!-- set max preview size -->
-                        <Label Content="Max item in Hitory" Margin="0" Padding="0"  VerticalAlignment="Center"/>
+                        <Label Content="Max items in Hitory" Margin="15,0,0,0" Padding="0"  VerticalAlignment="Center"/>
                         <TextBox 
                            ToolTip="Set the max items in the history (0 = nothing will be saved)"
                            Width="30"
@@ -347,112 +347,75 @@
             </Grid>
 
 
-    
-            <!--<Grid Grid.Row="2" Grid.ColumnSpan="3" Grid.Column="0">
-            
-                <DataGrid x:Name="DG_myStudents" 
-                          EnableRowVirtualization="False"
-                          EnableColumnVirtualization="False"
-                          IsReadOnly="True"
-                          RowDetailsVisibilityMode="Collapsed" 
-                          AutoGenerateColumns="False" 
-                          RowDetailsVisibilityChanged="DG_myStudents_RowDetailsVisibilityChanged" 
-                          ItemsSource="{Binding SearchResultList}"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
-                          
-                          CanUserAddRows="False"
-                          CanUserDeleteRows="False"
-                          CanUserSortColumns="True"
-                          CanUserResizeColumns="True"
-                          GridLinesVisibility="Horizontal">
-                    <DataGrid.Columns>
-                        <DataGridTemplateColumn Width="Auto">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Expander Width="50" 
-                                              Expanded="Expander_Expanded" 
-                                              Collapsed="Expander_Collapsed" 
-                                              IsExpanded="False" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="FilePath" Binding="{Binding FilePath}" CanUserResize="False" Width="Auto"/>
-                        <DataGridTextColumn Header="FileSize" Binding="{Binding FileSize}" CanUserResize="False" Width="Auto"/>
-                        <DataGridTextColumn Header="Count" Binding="{Binding Count}" CanUserResize="False" Width="Auto"/>
-                    </DataGrid.Columns>
-                    <DataGrid.RowDetailsTemplate>
-                        <DataTemplate>
-                            <DataGrid x:Name="DG_myMarks"
-                                      IsReadOnly="True"
-                                      Margin="15,8,8,8"
-                                      Width="Auto"
-                                      EnableRowVirtualization="False"
-                                      EnableColumnVirtualization="False"
-                                      AutoGenerateColumns="False"
-                                      HorizontalAlignment="Left"
-                                      HeadersVisibility="None"
-                                      CanUserAddRows="False"
-                                      CanUserDeleteRows="False"
-                                      CanUserSortColumns="True"
-                                      CanUserResizeColumns="True"
-                                      BorderBrush="Transparent"
-                                      BorderThickness="0"
-                                      GridLinesVisibility="None">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="LineNumber" Binding="{Binding LineNumber}" Width="Auto"/>
-                                    <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="Auto"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </DataTemplate>
-                    </DataGrid.RowDetailsTemplate>
-                </DataGrid>
-            
-            </Grid>-->
-
-
-         <TreeView 
-                Grid.Row="2"
-                Grid.ColumnSpan="3"
-                Grid.Column="0"
-                VirtualizingStackPanel.IsVirtualizing="True"
-                VirtualizingStackPanel.VirtualizationMode="Recycling"
-                Name="tvResult"
-                ItemsSource="{Binding SearchResultList}"
-                SelectedItemChanged="TvResult_OnSelectedItemChanged">
-            <TreeView.ItemContainerStyle>
-               <Style TargetType="TreeViewItem">
-                  <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                  <Setter Property="ContextMenu" Value="{StaticResource SearchListContextMenu}"/>
-               </Style>
-            </TreeView.ItemContainerStyle>
-            <TreeView.Resources>
-               <HierarchicalDataTemplate DataType="{x:Type plugInBase:SearchResultFile}" ItemsSource="{Binding FoundItems}">
-                  <Grid>
-                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="100" />
-                        <ColumnDefinition Width="100" />
-                     </Grid.ColumnDefinitions>
-                     <TextBlock Text="{Binding FilePath}" TextWrapping="NoWrap" Grid.Column="0" />
-                     <TextBlock Text="{Binding FileSize}" Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0" />
-                     <TextBlock Text="{Binding Count}" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" />
-                  </Grid>
-                  <HierarchicalDataTemplate.ItemTemplate>
-                     <DataTemplate DataType="{x:Type plugInBase:FoundItem}">
-                        <Grid>
-                           <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="50" />
-                              <ColumnDefinition Width="*" />
-                           </Grid.ColumnDefinitions>
-                           <TextBlock Text="{Binding LineNumber}" Grid.Column="0" />
-                           <TextBlock Text="{Binding Result}" Grid.Column="1"  TextWrapping="NoWrap" HorizontalAlignment="Left" Margin="10,0,0,0" />
-                        </Grid>
-                     </DataTemplate>
-                  </HierarchicalDataTemplate.ItemTemplate>
-               </HierarchicalDataTemplate>
-            </TreeView.Resources>
-         </TreeView>
-
+<TreeView
+    Grid.Row="2"
+    Grid.ColumnSpan="3"
+    Grid.Column="0"
+    VirtualizingStackPanel.IsVirtualizing="True"
+    VirtualizingStackPanel.VirtualizationMode="Recycling"
+    Name="tvResult"
+    ItemsSource="{Binding SearchResultList}"
+    SelectedItemChanged="TvResult_OnSelectedItemChanged">
+    <TreeView.ItemContainerStyle>
+        <Style TargetType="TreeViewItem">
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+            <Setter Property="ContextMenu" Value="{StaticResource SearchListContextMenu}"/>
+        </Style>
+    </TreeView.ItemContainerStyle>
+    <TreeView.Resources>
+        <HierarchicalDataTemplate DataType="{x:Type plugInBase:SearchResultFile}" ItemsSource="{Binding FoundItems}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="100" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding FilePath}" TextWrapping="NoWrap" Grid.Column="0" />
+                <TextBlock Text="{Binding FileSize}" Grid.Column="1" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                <TextBlock Text="{Binding Count}" Grid.Column="2" HorizontalAlignment="Left" Margin="10,0,0,0" />
+            </Grid>
+            <HierarchicalDataTemplate.ItemTemplate>
+                <DataTemplate DataType="{x:Type plugInBase:FoundItem}">
+                    <StackPanel Orientation="Horizontal">
+                       
+                        <!-- Line Number -->
+                        <TextBlock Text="{Binding LineNumber, StringFormat='Line: {0}'}" 
+                                   Margin="10,0,0,0"
+                                   Visibility="{Binding LineNumber, Converter={x:Static classes:NullToVisibilityConverter.Instance}}" />
+                                   
+                        <!-- Page Number -->
+                        <TextBlock Text="{Binding Page, StringFormat='Page: {0}'}" 
+                                   Margin="10,0,0,0"
+                                   Visibility="{Binding Page, Converter={x:Static classes:NullToVisibilityConverter.Instance}}" />
+                                   
+                        <!-- ParagraphNumber Number -->
+                        <TextBlock Text="{Binding ParagraphNumber, StringFormat='Paragraph: {0}'}" 
+                                   Margin="10,0,0,0"
+                                   Visibility="{Binding ParagraphNumber, Converter={x:Static classes:NullToVisibilityConverter.Instance}}" />
+                        
+                        <!-- Sheet Name -->
+                        <TextBlock Text="{Binding Sheet, StringFormat='Sheet: {0}'}" 
+                                   Margin="10,0,0,0"
+                                   Visibility="{Binding Sheet, Converter={x:Static classes:StringNullOrEmptyToVisibilityConverter.Instance}}" />
+                        
+                        <!-- Column -->
+                        <TextBlock Text="{Binding Column, StringFormat='Col: {0}'}" 
+                                   Margin="10,0,0,0"
+                                   Visibility="{Binding Column, Converter={x:Static classes:StringNullOrEmptyToVisibilityConverter.Instance}}" />
+                        
+                        <!-- Row -->
+                        <TextBlock Text="{Binding Row, StringFormat='Row: {0}'}" 
+                                   Margin="10,0,0,0"
+                                   Visibility="{Binding Row, Converter={x:Static classes:NullToVisibilityConverter.Instance}}" />
+                                   
+                        <TextBlock Text="{Binding Result}" TextWrapping="NoWrap" Margin="10,0,10,0" />
+                        
+                    </StackPanel>
+                </DataTemplate>
+            </HierarchicalDataTemplate.ItemTemplate>
+        </HierarchicalDataTemplate>
+    </TreeView.Resources>
+</TreeView>
 
 
 
@@ -477,12 +440,15 @@
             </Grid.RowDefinitions>
            
             <Grid Grid.Row="0">
-                <avalonEdit:TextEditor
+                <!--<avalonEdit:TextEditor
                                        Name="tbPreview"
                                        FontFamily="Consolas"
                                        FontSize="10pt"
                                        SyntaxHighlighting="C#">
-                </avalonEdit:TextEditor>
+                </avalonEdit:TextEditor>-->
+                <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1" CornerRadius="3">
+                    <ContentControl Name="PreviewHost"/>
+                </Border>
             </Grid>
         </Grid>
  

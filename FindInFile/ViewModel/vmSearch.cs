@@ -12,6 +12,7 @@ using FindInFiles.Extensions;
 using FindInFiles.Model;
 using Newtonsoft.Json;
 using PlugInBase;
+using Serilog;
 
 namespace FindInFiles.ViewModel
 {
@@ -19,6 +20,8 @@ namespace FindInFiles.ViewModel
    {
       
       #region Properties
+
+
 
       public string SearchText
       {
@@ -263,82 +266,112 @@ namespace FindInFiles.ViewModel
 
       #endregion Properties
 
+      private ILogger Log = Serilog.Log.ForContext<vmSearch>();
+      
       public event PropertyChangedEventHandler PropertyChanged;
+      public ICommand SearchCommand { get; private set; }
+      public Dictionary<string, UInt64> dicLineNumbers = new();
 
 
       private readonly modelSearch _model;
-      private SearchHistory SearchHistory;
-      
-      public Dictionary<string, UInt64> dicLineNumbers = new();
-      
       private readonly string SettingsFilePath;
       private readonly string HistoryFilePath;
-
-      public ICommand SearchCommand { get; private set; }
-      private Dictionary<String, List<ISearchInFolderPlugIn>?> dicExtensionPlugIns;
+      private SearchHistory SearchHistory;
+      private readonly Dictionary<String, ISearchInFolderPlugIn> _dicExtensionPlugin;
+      public Dictionary<String, IPreviewPlugIn> _dicPrewviewPlugin { get; set; }
+      private ConcurrentBag<PlugInBase.SearchResultFile> SearchResultListTmp;
+      private readonly object _lock = new object();
 
       /// <summary>
       /// 
       /// </summary>
-      public vmSearch(string sSettingsFilePathIn, string sSHistoryFilePathIn)
+      public vmSearch(string sSettingsFilePathIn, string sHistoryFilePathIn)
       {
+         Log.Information("Init Search Class");
+         
          _model = new modelSearch();
          SearchCommand = new RelayCommand(Execute, CanExecute);
          SettingsFilePath = sSettingsFilePathIn;
-         HistoryFilePath = sSHistoryFilePathIn;
+         HistoryFilePath = sHistoryFilePathIn;
 
-         dicExtensionPlugIns = new Dictionary<String, List<ISearchInFolderPlugIn>?>();
+         _dicExtensionPlugin = new Dictionary<String, ISearchInFolderPlugIn>();
+         _dicPrewviewPlugin = new Dictionary<String, IPreviewPlugIn>();
 
          string sPlugInFolder = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "PlugIns");
-         List<ISearchInFolderPlugIn> lstPlugIns = PluginLoader.LoadPlugins(sPlugInFolder);
-         foreach (ISearchInFolderPlugIn plugIn in lstPlugIns)
+         
+         (List<ISearchInFolderPlugIn> search, List<IPreviewPlugIn> preview) PlugIns = PluginLoader.LoadPlugins(sPlugInFolder);
+ 
+         Log.Information("prepare plugins");
+         foreach (ISearchInFolderPlugIn plugIn in PlugIns.search)
          {
-            List<string> lstExt = plugIn.GetExtensions();
+            List<string> lstExt = plugIn.Extensions;
             plugIn.FileSearchCompleted += PlugInOnFileSearchCompleted;
             plugIn.DebugOutput += PlugInOnDebugOutput;
 
-
             if (lstExt.Count == 0)
-            {
-               if (dicExtensionPlugIns.TryGetValue("", out List<ISearchInFolderPlugIn>? plugInList))
-               {
-                  plugInList?.Add(plugIn);
-               }
-               else
-               {
-                  dicExtensionPlugIns.Add("", new List<ISearchInFolderPlugIn> { plugIn });
-               }
+            {//default
+               _dicExtensionPlugin.Add("", plugIn);
             }
             else
             {
                foreach (String sExt in lstExt)
                {
-                  if (dicExtensionPlugIns.TryGetValue(sExt.ToUpper(), out List<ISearchInFolderPlugIn>? plugInList))
+                  if (_dicExtensionPlugin.TryGetValue(sExt.ToUpper(), out ISearchInFolderPlugIn plugInOut))
                   {
-                     plugInList?.Add(plugIn);
+#if DEBUG
+                     Log.Debug("Extension {ext} exists already in '{plugin}' (ISearchInFolderPlugIn)", sExt, plugInOut.Name);
+#endif
                   }
                   else
                   {
-                     dicExtensionPlugIns.Add(sExt.ToUpper(), new List<ISearchInFolderPlugIn> { plugIn });
+                     _dicExtensionPlugin.Add(sExt.ToUpper(), plugIn);
                   }
                }
             }
+         }
+         
+         foreach (IPreviewPlugIn preveiw in PlugIns.preview)
+         {
+            List<string> lstExt = preveiw.Extensions;
 
+            if (lstExt.Count == 0)
+            {//default
+               _dicPrewviewPlugin.Add("", preveiw);
+            }
+            else
+            {
+               foreach (String sExt in lstExt)
+               {
+                  if (_dicPrewviewPlugin.TryGetValue(sExt.ToUpper(), out IPreviewPlugIn plugInOut))
+                  {
+#if DEBUG
+                     Log.Debug("Extension {ext} exists already in '{plugin}' (IPreviewPlugIn)", sExt, plugInOut.Name);
+#endif
+                  }
+                  else
+                  {
+                     _dicPrewviewPlugin.Add(sExt.ToUpper(), preveiw);
+                  }
+               }
+            }
          }
       }
 
-      //private Stopwatch stopwatch = new Stopwatch();
-      private ConcurrentBag<PlugInBase.SearchResultFile> SearchResultListTmp;
-      private readonly object _lock = new object();
-
-
+      /// <summary>
+      /// 
+      /// </summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
       private void PlugInOnDebugOutput(Object? sender, String e)
       {
-
+#if DEBUG
+         Log.Verbose("DebugOutput = {e}", e);
+#endif
       }
       
       private void PlugInOnFileSearchCompleted(Object? sender, FileSearchEventArgs e)
       {
+         Log.Information("search complete");
          lock (_lock)
          {
             if (e.EventStatus == FileSearchEventArgs.Status.Completed)
@@ -350,19 +383,8 @@ namespace FindInFiles.ViewModel
                {
                   SearchResultListTmp.Add(result);
                }
-
-
-               //// Stop the stopwatch
-               //stopwatch.Stop();
-
-               //// Display the elapsed time
-               //System.Diagnostics.Debug.WriteLine($"Execution time: {stopwatch.ElapsedMilliseconds} ms");
-               //System.Diagnostics.Debug.WriteLine($"Execution time: {stopwatch.ElapsedTicks} ticks");
-               //System.Diagnostics.Debug.WriteLine($"Execution time: {stopwatch.Elapsed.TotalSeconds} seconds");
             }
          }
-
-
       }
 
       /// <summary>
@@ -384,6 +406,8 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public async void Execute(object? parameter)
       {
+         Log.Information("start search");
+         
          SearchResultListTmp = new ConcurrentBag<SearchResultFile>();
          SearchResultList = new ObservableCollection<SearchResultFile>();
          FilesCountAll = 0;
@@ -398,60 +422,83 @@ namespace FindInFiles.ViewModel
          
          try
          {
+            Log.Debug("getting extensions");
+            var lstExtensionPairs = Extension
+               .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+               .Select(p => p.Trim())
+               .Select(p =>
+               {
+                  string pattern = p;
+                  string ext = "";
 
-            List<string> lstExtensions = Extension.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-               .Select(ext => ext.Trim()).ToList(); // Trim whitespace
+                  if (string.IsNullOrWhiteSpace(p)) return (pattern, ext);
 
-            List<Task> tasks = new List<Task>();
+                  if (p.StartsWith("*.")) ext = p.Substring(1);                  // "*.txt" -> ".txt"
+                  else if (p.StartsWith(".")) ext = p;                           // ".pdf" -> ".pdf"
+                  else if (p.Contains('.') && !p.Contains('*'))
+                     ext = "." + p.Split('.').Last();                           // "myFile.txt" -> ".txt"
+                  else ext = "";                                                 // e.g., "README", "data*", "*.*"
 
-            foreach (String sExtension in lstExtensions)
+                  return (pattern, ext);
+               })
+               .Distinct()
+               .ToList();
+
+
+            List<Task> tasks = new();
+
+#if DEBUG
+            Log.Debug("seraching for search plugins");
+#endif
+            Dictionary<Guid, (ISearchInFolderPlugIn, List<String>)> dicPlugInSearch = new();
+            foreach (var (sPattern, sExt) in lstExtensionPairs)
             {
-               List<ISearchInFolderPlugIn>? lstPlugInNoExt;
-               if (dicExtensionPlugIns.TryGetValue(Extension.ToUpper(), out lstPlugInNoExt))
+               List<string> lstFilesChecked = new();
+               DirectoryInfo dirPath = new DirectoryInfo(Path);
+               SearchOption searchOption = SubDirs ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+               foreach (FileInfo fi in dirPath.EnumerateFiles(sPattern, searchOption))
                {
-
+                  if (ValidateFileSize(fi, SearchMinMB, SearchMaxMB))
+                  {
+                     lstFilesChecked.Add(fi.FullName);
+                  }
                }
-               else if (dicExtensionPlugIns.TryGetValue("", out lstPlugInNoExt))
+               ISearchInFolderPlugIn plugIn;
+               if (_dicExtensionPlugin.TryGetValue(sExt.ToUpper(), out plugIn))
                {
-                  
+#if DEBUG
+                  Log.Verbose("found serach plugin for ext {sExt}", sExt);
+#endif
+                  if(!dicPlugInSearch.ContainsKey(plugIn.ID))
+                     dicPlugInSearch.Add(plugIn.ID, (plugIn, lstFilesChecked));
+               }
+               else if (_dicExtensionPlugin.TryGetValue("", out plugIn))
+               {//default
+#if DEBUG
+                  Log.Verbose("using default serach plugin for ext {sExt}", sExt);
+#endif
+                  if(!dicPlugInSearch.ContainsKey(plugIn.ID))
+                     dicPlugInSearch.Add(plugIn.ID, (plugIn, lstFilesChecked));
                }
                else
                {
                   throw new NotImplementedException($"no PlugIn loaeded | 20241120-112231");
                }
-               
-               List<String> lstAllFiles = new();
-               if (SubDirs)
-                  lstAllFiles.AddRange(Directory.EnumerateFiles(Path, $"{sExtension}", SearchOption.AllDirectories).ToList());
-               else
-                  lstAllFiles.AddRange(Directory.EnumerateFiles(Path, $"{sExtension}", SearchOption.TopDirectoryOnly).ToList());
+            }
 
-               List<string> lstFilesChecked = new List<String>();
-               foreach (String sFile in lstAllFiles)
-               {
-                  FileInfo fi = new FileInfo(sFile);
-                  if(ValidateFileSize(fi, SearchMinMB, SearchMaxMB))
-                     lstFilesChecked.Add(sFile);
-               }
 
-               if (lstPlugInNoExt != null)
-               {
-                  foreach (ISearchInFolderPlugIn plugIn in lstPlugInNoExt)
-                  {
-                     tasks.Add(Task.Run(() => plugIn.SearchInFolder(
-                        lstFilesChecked,
-                        SearchText,
-                        MatchCase,
-                        WholeWord,
-                        progress,
-                        CancellationTokenSource.Token), CancellationTokenSource.Token));
-                  }
-               }
+            foreach (KeyValuePair<Guid, (ISearchInFolderPlugIn plugIn, List<String> Files)> kvp in dicPlugInSearch)
+            {
+               tasks.Add(Task.Run(() => kvp.Value.plugIn.SearchInFolder(
+                  kvp.Value.Files,
+                  SearchText,
+                  MatchCase,
+                  WholeWord,
+                  progress,
+                  CancellationTokenSource.Token), CancellationTokenSource.Token));
             }
 
             await Task.WhenAll(tasks);
-
-
 
             foreach (SearchResultFile result in SearchResultListTmp)
             {
@@ -473,6 +520,13 @@ namespace FindInFiles.ViewModel
          }
       }
       
+      /// <summary>
+      /// 
+      /// </summary>
+      /// <param name="fileInfo"></param>
+      /// <param name="minFileSizeMBIn"></param>
+      /// <param name="maxFileSizeMBIn"></param>
+      /// <returns></returns>
       private bool ValidateFileSize(
          FileInfo fileInfo,
          Int32 minFileSizeMBIn = 0,
@@ -486,6 +540,9 @@ namespace FindInFiles.ViewModel
          if (!(minFileSizeMBIn == 0 && maxFileSizeMBIn == 0) &&
              (fileSizeMB < minFileSizeMBIn || fileSizeMB > maxFileSizeMBIn))
          {
+#if DEBUG
+            Log.Verbose("File in ValidateFileSize ignored {file}", fileInfo.Name);
+#endif
             return false;
          }
 
@@ -512,6 +569,7 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void AddItemsSearchHistory(string text = "", string path = "", string extension = "")
       {
+         Log.Information("adding an item into the history");
          if (!string.IsNullOrEmpty(text))
          {
             SearchHistory.Text.Remove(text);
@@ -580,6 +638,7 @@ namespace FindInFiles.ViewModel
       /// <param name="item"></param>
       public void RemoveItemText(string item)
       {
+         Log.Information("removing a text item from the history");
          if (SearchHistory.Text.Contains(item))
          {
             SearchHistory.Text.Remove(item);
@@ -594,6 +653,7 @@ namespace FindInFiles.ViewModel
       /// <param name="item"></param>
       public void RemoveItemExt(string item)
       {
+         Log.Information("removing an extension item from the history");
          if (SearchHistory.Extension.Contains(item))
          {
             SearchHistory.Extension.Remove(item);
@@ -608,6 +668,7 @@ namespace FindInFiles.ViewModel
       /// <param name="item"></param>
       public void RemoveItemPath(string item)
       {
+         Log.Information("removing a path item from the history");
          if (SearchHistory.Path.Contains(item))
          {
             SearchHistory.Path.Remove(item);
@@ -626,6 +687,7 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void SaveHistory()
       {
+         Log.Information("saving history");
          if (!File.Exists(HistoryFilePath))
          {
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(HistoryFilePath));
@@ -641,6 +703,7 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void LoadHistory()
       {
+         Log.Information("loading history");
          // Clear existing items before loading new history
          SearchPaths.Clear();
          SearchExtensions.Clear();
@@ -666,6 +729,7 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void LoadSettings()
       {
+         Log.Information("loading settings");
          if (!File.Exists(SettingsFilePath))
          {//Default value
             MaxPreviewFileSizeMB = 5;
@@ -708,6 +772,7 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void SaveSettings()
       {
+         Log.Information("saving settings");
          JsonSerializerSettings jsonSettings = new()
          {
             Formatting = Formatting.Indented
@@ -740,7 +805,7 @@ namespace FindInFiles.ViewModel
       /// </summary>
       public void DeleteHistory()
       {  
-                    
+         Log.Information("delete whole history");  
          SearchPaths.Clear();
          SearchExtensions.Clear();
          SearchTexts.Clear();
