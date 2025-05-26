@@ -13,7 +13,7 @@ To avoid for example to open big files in the preview window or search just for 
 
 Just download the zip file and extract it somewhere. There is no setup file.
 
-Download (latest version): [FindInFiles-2025.05.26.12.zip](https://github.com/lukas-adrian/FindInFiles/blob/master/FindInFiles-2025.05.26.12.zip)
+Download (latest version): [https://github.com/lukas-adrian/FindInFiles/releases/download/2025.05.26.12/FindInFiles-2025.05.26.12.zip)
 
 ## Additional libraries
 
