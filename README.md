@@ -47,12 +47,13 @@ You can use my plugIn SearchInTextFilesKMP as a template
 * ~~(todo) add more PlugIns like PDF, Office Documents, etc~~
 * (idea) export of the results (csv, txt, clipboard, etc. no ideas yet)
 * (idea) treeview, add some columns for filesize and amount of results
-* (idea) ~~Tabs~~ (I don't like that idea anymore)
+* ~~(idea) Tabs (I don't like that idea anymore)~~
 * (todo) change the design like files in a different color, dark theme, etc
 * ~~(todo) add optional page number and not only row number for PDFs~~
 * (todo) expand the tree is too slow if there are a lot of nodes
-* (todo) searching in multiple folder
+* (todo) searching in multiple folder. Still not sure if I will add multiple folder as a group into the history or each?
 * ~~(todo) PlugIns including PreViewWindow like TextFiles + TextPreViewWindow, PDF + PDF PreViewWindow~~
+* (idea) optional profiles for the history (Every Profile has a different history?). Not sure about that idea
 
 ## License
 
